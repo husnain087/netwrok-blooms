@@ -185,7 +185,7 @@ const ChatWidget = () => {
         {/* Input */}
         <div className="p-3 border-t flex gap-2">
           <Input
-            placeholder="Ask about PRO NET..."
+            placeholder="Ask about Network-Bloom..."
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}
