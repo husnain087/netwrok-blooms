@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Home, Users, MessageSquare, Bell, Briefcase, Search, LogOut, User, BotMessageSquare, CreditCard, Shield, X } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -86,10 +87,8 @@ const Navbar = () => {
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
-              <Briefcase className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg text-foreground hidden sm:inline tracking-tight">PRO NET</span>
+            <img src={logoImg} alt="Network-Bloom" className="h-8 w-8 rounded-full object-cover" />
+            <span className="font-bold text-lg text-foreground hidden sm:inline tracking-tight">Network-Bloom</span>
           </Link>
           <div className="relative hidden sm:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

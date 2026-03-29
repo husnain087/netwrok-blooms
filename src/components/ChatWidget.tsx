@@ -143,8 +143,8 @@ const ChatWidget = () => {
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-semibold text-primary-foreground">PRO NET Assistant</p>
-            <p className="text-[11px] text-primary-foreground/70">Ask about PRO NET features</p>
+            <p className="text-sm font-semibold text-primary-foreground">Network-Bloom Assistant</p>
+            <p className="text-[11px] text-primary-foreground/70">Ask about Network-Bloom features</p>
           </div>
         </div>
 
@@ -153,7 +153,7 @@ const ChatWidget = () => {
           {messages.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">
               <Bot className="h-10 w-10 mx-auto mb-2 opacity-40" />
-              <p>Hi! How can I help you with PRO NET?</p>
+              <p>Hi! How can I help you with Network-Bloom?</p>
             </div>
           )}
           <div className="space-y-3">
@@ -185,7 +185,7 @@ const ChatWidget = () => {
         {/* Input */}
         <div className="p-3 border-t flex gap-2">
           <Input
-            placeholder="Ask about PRO NET..."
+            placeholder="Ask about Network-Bloom..."
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}

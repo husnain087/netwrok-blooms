@@ -19,6 +19,12 @@ import AdminLogin from "@/pages/AdminLogin";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import RunAds from "@/pages/RunAds";
+import About from "@/pages/About";
+import Accessibility from "@/pages/Accessibility";
+import HelpCenter from "@/pages/HelpCenter";
+import AdChoices from "@/pages/AdChoices";
+import Advertising from "@/pages/Advertising";
+import BusinessServices from "@/pages/BusinessServices";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -49,6 +55,12 @@ const App = () => (
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/accessibility" element={<Accessibility />} />
+            <Route path="/help-center" element={<HelpCenter />} />
+            <Route path="/ad-choices" element={<AdChoices />} />
+            <Route path="/advertising" element={<Advertising />} />
+            <Route path="/business-services" element={<BusinessServices />} />
             <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route path="/" element={<Feed />} />
               <Route path="/profile/:userId" element={<Profile />} />

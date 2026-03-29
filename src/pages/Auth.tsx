@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Briefcase } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { Separator } from '@/components/ui/separator';
 import { Link } from 'react-router-dom';
 
@@ -71,10 +71,8 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md animate-scale-in">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-            <Briefcase className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <p className="text-sm font-bold tracking-tight text-foreground">PRO NET</p>
+          <img src={logoImg} alt="Network-Bloom" className="mx-auto h-12 w-12 rounded-full" />
+          <p className="text-sm font-bold tracking-tight text-foreground">Network-Bloom</p>
           <CardTitle className="text-2xl font-bold">
             {isLogin ? 'Sign in' : 'Join now'}
           </CardTitle>
