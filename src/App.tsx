@@ -18,6 +18,7 @@ import Admin from "@/pages/Admin";
 import AdminLogin from "@/pages/AdminLogin";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import RunAds from "@/pages/RunAds";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/ai-assistant" element={<AIAssistant />} />
               <Route path="/premium" element={<Premium />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/run-ads" element={<RunAds />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
