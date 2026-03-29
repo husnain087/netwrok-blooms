@@ -7,6 +7,63 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 import { Bookmark, Eye, BarChart3, TrendingUp } from 'lucide-react';
 
+const TrendingTopics = () => {
+  const { data: postCount = 0 } = useQuery({
+    queryKey: ['total-post-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
+
+  const { data: likesCount = 0 } = useQuery({
+    queryKey: ['total-likes-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('likes')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
+
+  const { data: commentsCount = 0 } = useQuery({
+    queryKey: ['total-comments-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('comments')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-sm">Trending</span>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-primary">Total Posts</p>
+            <p className="text-xs text-muted-foreground">{postCount} posts</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-primary">Total Reactions</p>
+            <p className="text-xs text-muted-foreground">{likesCount} reactions</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-primary">Total Comments</p>
+            <p className="text-xs text-muted-foreground">{commentsCount} comments</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const ProfileSidebar = () => {
   const { user } = useAuth();
 
@@ -117,28 +174,7 @@ const ProfileSidebar = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-sm">Trending</span>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-semibold text-primary">#WebDevelopment</p>
-              <p className="text-xs text-muted-foreground">4K posts</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-primary">#AI</p>
-              <p className="text-xs text-muted-foreground">6K posts</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-primary">#CareerGrowth</p>
-              <p className="text-xs text-muted-foreground">1K posts</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <TrendingTopics />
     </div>
   );
 };

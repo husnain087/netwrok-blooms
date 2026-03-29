@@ -9,6 +9,41 @@ import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
+const MutualConnectionCount: React.FC<{ userId: string; currentUserId: string }> = ({ userId, currentUserId }) => {
+  const { data: count = 0 } = useQuery({
+    queryKey: ['mutual-connections', userId, currentUserId],
+    queryFn: async () => {
+      // Get connections of the suggested user
+      const { data: theirConns } = await supabase
+        .from('connections')
+        .select('requester_id, receiver_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+
+      // Get connections of the current user
+      const { data: myConns } = await supabase
+        .from('connections')
+        .select('requester_id, receiver_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`);
+
+      const theirIds = new Set(
+        (theirConns || []).map((c: any) => c.requester_id === userId ? c.receiver_id : c.requester_id)
+      );
+      const myIds = new Set(
+        (myConns || []).map((c: any) => c.requester_id === currentUserId ? c.receiver_id : c.requester_id)
+      );
+
+      let mutual = 0;
+      theirIds.forEach(id => { if (myIds.has(id)) mutual++; });
+      return mutual;
+    },
+    enabled: !!userId && !!currentUserId,
+  });
+
+  if (count === 0) return null;
+  return <p className="text-xs text-primary/70 mt-0.5">{count} mutual connection{count !== 1 ? 's' : ''}</p>;
+};
 const SuggestedConnections = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -85,7 +120,7 @@ const SuggestedConnections = () => {
                       {p.full_name || 'User'}
                     </Link>
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">{p.headline || 'Professional'}</p>
-                    <p className="text-xs text-primary/70 mt-0.5">{Math.floor(Math.random() * 20) + 1} mutual connections</p>
+                    <MutualConnectionCount userId={p.user_id} currentUserId={user!.id} />
                   </div>
                 </div>
                 <div className="flex justify-center mt-2">
