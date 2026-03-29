@@ -27,7 +27,7 @@ const Terms = () => {
             <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate information during registration and to update your information as necessary.</p>
 
             <h3 className="text-foreground font-semibold text-base">3. Acceptable Use</h3>
-            <p>You agree to use PRO NET only for lawful purposes and in a manner that does not infringe the rights of others. You must not:</p>
+            <p>You agree to use Network-Bloom only for lawful purposes and in a manner that does not infringe the rights of others. You must not:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Post false, misleading, or defamatory content</li>
               <li>Harass, bully, or intimidate other users</li>
