@@ -303,56 +303,95 @@ const PostJobForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
 const JobCard: React.FC<{ job: any }> = ({ job }) => {
   const { user } = useAuth();
   const [applyOpen, setApplyOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const { data: poster } = useQuery({
-    queryKey: ['profile', job.user_id],
+  const { data: applicantCount = 0 } = useQuery({
+    queryKey: ['job-applicants', job.id],
     queryFn: async () => {
-      const { data } = await supabase.from('profiles').select('*').eq('user_id', job.user_id).single();
-      return data;
+      const { count } = await supabase
+        .from('job_applications')
+        .select('*', { count: 'exact', head: true })
+        .eq('job_id', job.id);
+      return count || 0;
     },
   });
 
+  const companyInitials = job.company
+    ?.split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'CO';
+
   return (
-    <div className="border rounded-lg p-4 hover:bg-secondary/50 transition-colors">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <h3 className="font-semibold text-base">{job.title}</h3>
-          <p className="text-sm text-muted-foreground">{job.company}</p>
-          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-            {job.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{job.location}</span>}
-            <Badge variant="outline" className="text-xs">{job.job_type}</Badge>
-            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}</span>
+    <div className="p-5 hover:bg-secondary/30 transition-colors">
+      <div className="flex items-start gap-4">
+        {/* Company avatar */}
+        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <span className="text-sm font-extrabold text-primary">{companyInitials}</span>
+        </div>
+
+        {/* Job info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-bold text-base text-primary hover:underline cursor-pointer">{job.title}</h3>
+              <p className="text-sm font-semibold text-foreground">{job.company}</p>
+              <p className="text-sm text-muted-foreground">{job.location || 'Remote'}</p>
+            </div>
+            <button
+              onClick={() => setSaved(!saved)}
+              className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            >
+              <Bookmark className={`h-5 w-5 ${saved ? 'fill-primary text-primary' : ''}`} />
+            </button>
           </div>
+
           {job.skills?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {job.skills.map((s: string, i: number) => <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>)}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {job.skills.slice(0, 4).map((s: string, i: number) => (
+                <Badge key={i} variant="secondary" className="text-xs font-bold">{s}</Badge>
+              ))}
             </div>
           )}
-          {job.deadline && (
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              <Calendar className="h-3 w-3" /> Deadline: {new Date(job.deadline).toLocaleDateString()}
-            </p>
+
+          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{job.description}</p>
+
+          {job.document_url && (
+            <a href={job.document_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block font-bold">
+              📄 View Job Description
+            </a>
           )}
+
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
+              </span>
+              {job.deadline && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" /> Deadline: {new Date(job.deadline).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-primary">{applicantCount} applicant{applicantCount !== 1 ? 's' : ''}</span>
+              {user?.id !== job.user_id && (
+                <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="rounded-full font-bold h-8 px-5">Apply</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+                    <DialogHeader><DialogTitle>Apply to {job.title}</DialogTitle></DialogHeader>
+                    <ApplyForm job={job} onSuccess={() => setApplyOpen(false)} />
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+          </div>
         </div>
-        {user?.id !== job.user_id && (
-          <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="rounded-full ml-3">Apply</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Apply to {job.title}</DialogTitle></DialogHeader>
-              <ApplyForm job={job} onSuccess={() => setApplyOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        )}
       </div>
-      <p className="text-sm mt-2 text-muted-foreground line-clamp-3">{job.description}</p>
-      {job.document_url && (
-        <a href={job.document_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">
-          📄 View Job Description
-        </a>
-      )}
-      <p className="text-xs text-muted-foreground mt-2">Posted by {poster?.full_name || 'Unknown'}</p>
     </div>
   );
 };
