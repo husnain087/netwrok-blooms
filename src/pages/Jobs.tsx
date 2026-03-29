@@ -24,6 +24,8 @@ const Jobs = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [typeFilters, setTypeFilters] = useState<string[]>([]);
   const [postOpen, setPostOpen] = useState(false);
 
   const { data: jobs = [], isLoading } = useQuery({
@@ -34,53 +36,126 @@ const Jobs = () => {
     },
   });
 
-  const filteredJobs = jobs.filter((j: any) =>
-    !search || j.title.toLowerCase().includes(search.toLowerCase()) ||
-    j.company.toLowerCase().includes(search.toLowerCase()) ||
-    j.location.toLowerCase().includes(search.toLowerCase())
-  );
+  const toggleType = (type: string) => {
+    setTypeFilters(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
+  };
+
+  const filteredJobs = jobs.filter((j: any) => {
+    const matchSearch = !search || j.title.toLowerCase().includes(search.toLowerCase()) ||
+      j.company.toLowerCase().includes(search.toLowerCase());
+    const matchLocation = !locationFilter || j.location?.toLowerCase().includes(locationFilter.toLowerCase());
+    const matchType = typeFilters.length === 0 || typeFilters.includes(j.job_type);
+    return matchSearch && matchLocation && matchType;
+  });
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5" /> Jobs
-            </CardTitle>
-            <Dialog open={postOpen} onOpenChange={setPostOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="rounded-full gap-1">
-                  <Plus className="h-4 w-4" /> Post a Job
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Post a Job</DialogTitle></DialogHeader>
-                <PostJobForm onSuccess={() => { setPostOpen(false); queryClient.invalidateQueries({ queryKey: ['jobs'] }); }} />
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search for jobs..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-          {isLoading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading jobs...</p>
-          ) : filteredJobs.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-semibold">No jobs found</p>
-              <p className="text-sm">Be the first to post a job opportunity!</p>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Left Sidebar - Search Filters */}
+      <aside className="lg:col-span-4">
+        <Card className="sticky top-20">
+          <CardContent className="p-5 space-y-5">
+            <h3 className="font-bold text-lg">Search filters</h3>
+
+            {/* Job title */}
+            <div>
+              <label className="text-sm font-bold block mb-1.5">Job title</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="e.g. React Developer"
+                  className="pl-9"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
+
+            {/* Location */}
+            <div>
+              <label className="text-sm font-bold block mb-1.5">Location</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="e.g. Lahore"
+                  className="pl-9"
+                  value={locationFilter}
+                  onChange={e => setLocationFilter(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Job type */}
+            <div>
+              <label className="text-sm font-bold block mb-2">Job type</label>
+              <div className="space-y-2">
+                {['Full-time', 'Part-time', 'Contract', 'Internship'].map(type => (
+                  <label key={type} className="flex items-center gap-2.5 cursor-pointer text-sm font-medium text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={typeFilters.includes(type)}
+                      onChange={() => toggleType(type)}
+                      className="h-4 w-4 rounded border-border accent-primary"
+                    />
+                    {type}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Experience level (UI only for now) */}
+            <div>
+              <label className="text-sm font-bold block mb-2">Experience level</label>
+              <div className="space-y-2">
+                {['Entry level', 'Mid-Senior level', 'Director', 'Executive'].map(level => (
+                  <label key={level} className="flex items-center gap-2.5 cursor-pointer text-sm font-medium text-foreground">
+                    <input type="checkbox" className="h-4 w-4 rounded border-border accent-primary" />
+                    {level}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </aside>
+
+      {/* Right - Job Listings */}
+      <div className="lg:col-span-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-extrabold">Recommended for you</h2>
+            <p className="text-sm text-muted-foreground font-medium">Based on your profile and search history</p>
+          </div>
+          <Dialog open={postOpen} onOpenChange={setPostOpen}>
+            <DialogTrigger asChild>
+              <Button className="rounded-full gap-1.5 font-bold">
+                <Plus className="h-4 w-4" /> Post a Job
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Post a Job</DialogTitle></DialogHeader>
+              <PostJobForm onSuccess={() => { setPostOpen(false); queryClient.invalidateQueries({ queryKey: ['jobs'] }); }} />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {isLoading ? (
+          <p className="text-center py-8 text-muted-foreground">Loading jobs...</p>
+        ) : filteredJobs.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-16">
+              <Briefcase className="h-14 w-14 mx-auto mb-4 text-muted-foreground/40" />
+              <p className="text-xl font-bold">No jobs found</p>
+              <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters or post a job opportunity!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-0 divide-y">
               {filteredJobs.map((job: any) => <JobCard key={job.id} job={job} />)}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
