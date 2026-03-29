@@ -36,6 +36,27 @@ const PostCard: React.FC<PostCardProps> = ({ post, isRepost, repostedBy }) => {
   const [showComments, setShowComments] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [reactionAnimating, setReactionAnimating] = useState<string | null>(null);
+  const reactionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleReactionMouseEnter = () => {
+    if (reactionTimeoutRef.current) {
+      clearTimeout(reactionTimeoutRef.current);
+      reactionTimeoutRef.current = null;
+    }
+    setShowReactions(true);
+  };
+
+  const handleReactionMouseLeave = () => {
+    reactionTimeoutRef.current = setTimeout(() => {
+      setShowReactions(false);
+    }, 500);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (reactionTimeoutRef.current) clearTimeout(reactionTimeoutRef.current);
+    };
+  }, []);
   const [sendOpen, setSendOpen] = useState(false);
   const [sendSearch, setSendSearch] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
