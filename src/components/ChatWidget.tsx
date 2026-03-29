@@ -153,7 +153,7 @@ const ChatWidget = () => {
           {messages.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">
               <Bot className="h-10 w-10 mx-auto mb-2 opacity-40" />
-              <p>Hi! How can I help you with PRO NET?</p>
+              <p>Hi! How can I help you with Network-Bloom?</p>
             </div>
           )}
           <div className="space-y-3">
