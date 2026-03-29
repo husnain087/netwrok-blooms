@@ -66,31 +66,41 @@ const SuggestedConnections = () => {
     <Card>
       <CardContent className="p-5">
         <h3 className="font-bold text-lg mb-5">Suggested Connections</h3>
-        <div className="space-y-6">
-          {suggestions.map((p: any) => (
-            <div key={p.id} className="flex flex-col items-center text-center">
-              <Link to={`/profile/${p.user_id}`}>
-                <Avatar className="h-16 w-16 border-3 border-primary/30">
-                  <AvatarImage src={p.avatar_url || ''} />
-                  <AvatarFallback className="text-base font-bold bg-primary text-primary-foreground">
-                    {p.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-              <Link to={`/profile/${p.user_id}`} className="mt-2 text-sm font-semibold hover:underline">
-                {p.full_name || 'User'}
-              </Link>
-              <p className="text-xs text-muted-foreground mt-0.5">{p.headline || 'Professional'}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 h-8 text-xs rounded-full gap-1.5 border-primary text-primary hover:bg-primary hover:text-primary-foreground px-4"
-                onClick={() => connect.mutate(p.user_id)}
-              >
-                <UserPlus className="h-3.5 w-3.5" /> Connect
-              </Button>
-            </div>
-          ))}
+        <div className="space-y-5">
+          {suggestions.map((p: any) => {
+            const initials = p.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'U';
+            return (
+              <div key={p.id} className="flex flex-col">
+                <div className="flex items-start gap-3">
+                  <Link to={`/profile/${p.user_id}`}>
+                    <Avatar className="h-14 w-14 border-[3px] border-primary/40">
+                      <AvatarImage src={p.avatar_url || ''} />
+                      <AvatarFallback className="text-sm font-bold bg-primary text-primary-foreground">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <Link to={`/profile/${p.user_id}`} className="text-sm font-bold hover:underline leading-tight">
+                      {p.full_name || 'User'}
+                    </Link>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{p.headline || 'Professional'}</p>
+                    <p className="text-xs text-primary/70 mt-0.5">{Math.floor(Math.random() * 20) + 1} mutual connections</p>
+                  </div>
+                </div>
+                <div className="flex justify-center mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs rounded-full gap-1.5 border-primary text-primary hover:bg-primary hover:text-primary-foreground px-5"
+                    onClick={() => connect.mutate(p.user_id)}
+                  >
+                    <UserPlus className="h-3.5 w-3.5" /> Connect
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
