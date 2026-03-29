@@ -100,12 +100,14 @@ const Feed = () => {
         <CreatePost />
 
         {/* Run Ads Button */}
-        <Link to="/run-ads">
-          <Button className="w-full rounded-2xl gap-2 font-bold text-base py-5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg">
-            <Megaphone className="h-5 w-5" />
-            Run Ads & Configure
-          </Button>
-        </Link>
+        <div className="mt-4">
+          <Link to="/run-ads">
+            <Button className="w-full rounded-2xl gap-2 font-bold text-base py-5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg">
+              <Megaphone className="h-5 w-5" />
+              Run Ads & Configure
+            </Button>
+          </Link>
+        </div>
 
         {/* For You / Following Tabs */}
         <div className="flex rounded-2xl bg-card border overflow-hidden shadow-sm">

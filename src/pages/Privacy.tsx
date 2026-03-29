@@ -18,7 +18,7 @@ const Privacy = () => {
             <CardTitle className="text-2xl">Privacy Policy</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none space-y-4 text-sm text-muted-foreground">
-            <p><strong>Last updated:</strong> March 25, 2026</p>
+            <p><strong>Last updated:</strong> March 29, 2026</p>
 
             <h3 className="text-foreground font-semibold text-base">1. Information We Collect</h3>
             <p>We collect information you provide directly to us, including:</p>
@@ -32,7 +32,7 @@ const Privacy = () => {
             <h3 className="text-foreground font-semibold text-base">2. How We Use Your Information</h3>
             <p>We use your information to:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Provide and maintain PRO NET services</li>
+              <li>Provide and maintain Network-Bloom services</li>
               <li>Connect you with other professionals</li>
               <li>Send notifications about relevant activity</li>
               <li>Improve our platform and user experience</li>
@@ -42,7 +42,7 @@ const Privacy = () => {
             <p>We implement appropriate security measures to protect your personal data. All data is encrypted in transit and at rest. We regularly review and update our security practices.</p>
 
             <h3 className="text-foreground font-semibold text-base">4. Data Sharing</h3>
-            <p>We do not sell your personal data. Your profile information is visible to other PRO NET users according to your privacy settings. We may share anonymized data for analytics purposes.</p>
+            <p>We do not sell your personal data. Your profile information is visible to other Network-Bloom users according to your privacy settings. We may share anonymized data for analytics purposes.</p>
 
             <h3 className="text-foreground font-semibold text-base">5. Your Rights</h3>
             <p>You have the right to access, update, or delete your personal data at any time through your profile settings. You may also request a copy of your data by contacting us.</p>
@@ -51,7 +51,7 @@ const Privacy = () => {
             <p>We use cookies and similar technologies to maintain your session and improve your experience. You can control cookie settings through your browser preferences.</p>
 
             <h3 className="text-foreground font-semibold text-base">7. Contact</h3>
-            <p>For privacy-related inquiries, please contact us through the PRO NET platform.</p>
+            <p>For privacy-related inquiries, please contact us at <a href="mailto:networkbloom.work@gmail.com" className="text-primary underline">networkbloom.work@gmail.com</a>.</p>
           </CardContent>
         </Card>
       </div>

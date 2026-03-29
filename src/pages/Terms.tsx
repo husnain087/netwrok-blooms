@@ -18,7 +18,7 @@ const Terms = () => {
             <CardTitle className="text-2xl">Terms and Conditions</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none space-y-4 text-sm text-muted-foreground">
-            <p><strong>Last updated:</strong> March 25, 2026</p>
+            <p><strong>Last updated:</strong> March 29, 2026</p>
 
             <h3 className="text-foreground font-semibold text-base">1. Acceptance of Terms</h3>
             <p>By accessing and using Network-Bloom, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to these terms, please do not use this platform.</p>
@@ -37,22 +37,22 @@ const Terms = () => {
             </ul>
 
             <h3 className="text-foreground font-semibold text-base">4. Content Ownership</h3>
-            <p>You retain ownership of the content you post on PRO NET. By posting content, you grant PRO NET a non-exclusive, worldwide license to display and distribute your content within the platform.</p>
+            <p>You retain ownership of the content you post on Network-Bloom. By posting content, you grant Network-Bloom a non-exclusive, worldwide license to display and distribute your content within the platform.</p>
 
             <h3 className="text-foreground font-semibold text-base">5. Privacy</h3>
-            <p>Your use of PRO NET is also governed by our Privacy Policy. We collect and process your data to provide and improve our services. We do not sell your personal data to third parties.</p>
+            <p>Your use of Network-Bloom is also governed by our Privacy Policy. We collect and process your data to provide and improve our services. We do not sell your personal data to third parties.</p>
 
             <h3 className="text-foreground font-semibold text-base">6. Account Termination</h3>
-            <p>PRO NET reserves the right to suspend or terminate your account if you violate these terms. You may also delete your account at any time by contacting support.</p>
+            <p>Network-Bloom reserves the right to suspend or terminate your account if you violate these terms. You may also delete your account at any time by contacting support.</p>
 
             <h3 className="text-foreground font-semibold text-base">7. Limitation of Liability</h3>
-            <p>PRO NET is provided "as is" without warranties. We are not liable for any indirect, incidental, or consequential damages arising from your use of the platform.</p>
+            <p>Network-Bloom is provided "as is" without warranties. We are not liable for any indirect, incidental, or consequential damages arising from your use of the platform.</p>
 
             <h3 className="text-foreground font-semibold text-base">8. Changes to Terms</h3>
             <p>We may update these terms from time to time. Continued use of the platform after changes constitutes acceptance of the new terms.</p>
 
             <h3 className="text-foreground font-semibold text-base">9. Contact</h3>
-            <p>If you have any questions about these terms, please reach out through the PRO NET platform.</p>
+            <p>If you have any questions about these terms, please reach out at <a href="mailto:networkbloom.work@gmail.com" className="text-primary underline">networkbloom.work@gmail.com</a>.</p>
           </CardContent>
         </Card>
       </div>
