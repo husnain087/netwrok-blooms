@@ -143,8 +143,8 @@ const ChatWidget = () => {
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-semibold text-primary-foreground">PRO NET Assistant</p>
-            <p className="text-[11px] text-primary-foreground/70">Ask about PRO NET features</p>
+            <p className="text-sm font-semibold text-primary-foreground">Network-Bloom Assistant</p>
+            <p className="text-[11px] text-primary-foreground/70">Ask about Network-Bloom features</p>
           </div>
         </div>
 
