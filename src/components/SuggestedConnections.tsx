@@ -85,7 +85,7 @@ const SuggestedConnections = () => {
                       {p.full_name || 'User'}
                     </Link>
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">{p.headline || 'Professional'}</p>
-                    <p className="text-xs text-primary/70 mt-0.5">{Math.floor(Math.random() * 20) + 1} mutual connections</p>
+                    <MutualConnectionCount userId={p.user_id} currentUserId={user!.id} />
                   </div>
                 </div>
                 <div className="flex justify-center mt-2">

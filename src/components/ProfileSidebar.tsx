@@ -117,28 +117,7 @@ const ProfileSidebar = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-sm">Trending</span>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-semibold text-primary">#WebDevelopment</p>
-              <p className="text-xs text-muted-foreground">4K posts</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-primary">#AI</p>
-              <p className="text-xs text-muted-foreground">6K posts</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-primary">#CareerGrowth</p>
-              <p className="text-xs text-muted-foreground">1K posts</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <TrendingTopics />
     </div>
   );
 };
