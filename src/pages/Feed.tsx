@@ -99,11 +99,19 @@ const Feed = () => {
       <div className="lg:col-span-6 space-y-4">
         <CreatePost />
 
+        {/* Run Ads Button */}
+        <Link to="/run-ads">
+          <Button className="w-full rounded-2xl gap-2 font-bold text-base py-5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg">
+            <Megaphone className="h-5 w-5" />
+            Run Ads & Configure
+          </Button>
+        </Link>
+
         {/* For You / Following Tabs */}
-        <div className="flex rounded-lg bg-card border overflow-hidden">
+        <div className="flex rounded-2xl bg-card border overflow-hidden shadow-sm">
           <button
             onClick={() => setActiveTab('foryou')}
-            className={`flex-1 py-2.5 text-sm font-semibold text-center transition-colors ${
+            className={`flex-1 py-3 text-base font-bold text-center transition-colors ${
               activeTab === 'foryou'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-secondary'
@@ -113,7 +121,7 @@ const Feed = () => {
           </button>
           <button
             onClick={() => setActiveTab('following')}
-            className={`flex-1 py-2.5 text-sm font-semibold text-center transition-colors ${
+            className={`flex-1 py-3 text-base font-bold text-center transition-colors ${
               activeTab === 'following'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-secondary'

@@ -59,6 +59,7 @@ const App = () => (
               <Route path="/ai-assistant" element={<AIAssistant />} />
               <Route path="/premium" element={<Premium />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/run-ads" element={<RunAds />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
