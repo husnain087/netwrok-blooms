@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import CreatePost from '@/components/CreatePost';
 import PostCard from '@/components/PostCard';
 import ProfileSidebar from '@/components/ProfileSidebar';
 import SuggestedConnections from '@/components/SuggestedConnections';
 import { Button } from '@/components/ui/button';
+import { Megaphone } from 'lucide-react';
 
 const Feed = () => {
   const { user } = useAuth();
