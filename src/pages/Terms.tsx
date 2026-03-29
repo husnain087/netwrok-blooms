@@ -21,7 +21,7 @@ const Terms = () => {
             <p><strong>Last updated:</strong> March 25, 2026</p>
 
             <h3 className="text-foreground font-semibold text-base">1. Acceptance of Terms</h3>
-            <p>By accessing and using PRO NET, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to these terms, please do not use this platform.</p>
+            <p>By accessing and using Network-Bloom, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to these terms, please do not use this platform.</p>
 
             <h3 className="text-foreground font-semibold text-base">2. User Accounts</h3>
             <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate information during registration and to update your information as necessary.</p>
