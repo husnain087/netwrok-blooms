@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Briefcase } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { Separator } from '@/components/ui/separator';
 import { Link } from 'react-router-dom';
 
