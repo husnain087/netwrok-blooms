@@ -272,8 +272,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, isRepost, repostedBy }) => {
         <div className="flex items-center justify-around pt-1 relative">
           <div
             className="relative"
-            onMouseEnter={() => setShowReactions(true)}
-            onMouseLeave={() => setShowReactions(false)}
+            onMouseEnter={handleReactionMouseEnter}
+            onMouseLeave={handleReactionMouseLeave}
           >
             <div
               className={cn(
