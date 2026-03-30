@@ -34,7 +34,36 @@ const Navbar = () => {
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user!.id)
+        .eq('is_read', false)
+        .not('type', 'in', '("message","connection_request","connection_accepted")');
+      return count || 0;
+    },
+    enabled: !!user,
+    refetchInterval: 10000,
+  });
+
+  const { data: unreadMsgCount = 0 } = useQuery({
+    queryKey: ['unread-msg-count', user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', user!.id)
         .eq('is_read', false);
+      return count || 0;
+    },
+    enabled: !!user,
+    refetchInterval: 10000,
+  });
+
+  const { data: pendingConnCount = 0 } = useQuery({
+    queryKey: ['pending-conn-count', user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('connections')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', user!.id)
+        .eq('status', 'pending');
       return count || 0;
     },
     enabled: !!user,
