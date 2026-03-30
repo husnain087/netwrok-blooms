@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send } from 'lucide-react';
+import { Send, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const Messaging = () => {
@@ -53,9 +53,13 @@ const Messaging = () => {
         .eq('sender_id', selectedUser)
         .eq('receiver_id', user.id)
         .eq('is_read', false);
+
+      // Invalidate unread counts after marking as read
+      queryClient.invalidateQueries({ queryKey: ['unread-msg-count'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-msg-from', selectedUser] });
     };
     fetchMessages();
-  }, [selectedUser, user]);
+  }, [selectedUser, user, queryClient]);
 
   // Realtime subscription for messages
   useEffect(() => {
@@ -82,11 +86,14 @@ const Messaging = () => {
             supabase.from('messages').update({ is_read: true }).eq('id', msg.id);
           }
         }
+        // Invalidate unread counts for badge updates
+        queryClient.invalidateQueries({ queryKey: ['unread-msg-count'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-msg-from'] });
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, selectedUser]);
+  }, [user, selectedUser, queryClient]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -109,12 +116,14 @@ const Messaging = () => {
     });
   };
 
+  const handleBack = () => setSelectedUser(null);
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-0 sm:px-4">
       <Card className="h-[calc(100vh-8rem)] flex overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-72 border-r flex flex-col">
-          <div className="p-3 border-b font-semibold">Messaging</div>
+        {/* Sidebar - hidden on mobile when chat is open */}
+        <div className={`${selectedUser ? 'hidden md:flex' : 'flex'} w-full md:w-72 border-r flex-col`}>
+          <div className="p-3 border-b font-semibold text-lg">Messaging</div>
           <div className="flex-1 overflow-y-auto">
             {connectedUserIds.map((uid: string) => (
               <ConversationItem
@@ -130,23 +139,23 @@ const Messaging = () => {
           </div>
         </div>
 
-        {/* Chat area */}
-        <div className="flex-1 flex flex-col">
+        {/* Chat area - full width on mobile */}
+        <div className={`${selectedUser ? 'flex' : 'hidden md:flex'} flex-1 flex-col`}>
           {selectedUser ? (
             <>
-              <ChatHeader userId={selectedUser} />
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <ChatHeader userId={selectedUser} onBack={handleBack} />
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
                 {messages.map((msg: any) => (
                   <div
                     key={msg.id}
                     className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'} animate-fade-in`}
                   >
-                    <div className={`max-w-[70%] rounded-lg p-3 text-sm transition-all ${
+                    <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl p-3 text-sm transition-all ${
                       msg.sender_id === user?.id
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-secondary'
                     }`}>
-                      <p>{msg.content}</p>
+                      <p className="break-words">{msg.content}</p>
                       <p className="text-[10px] mt-1 opacity-70">
                         {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
                       </p>
@@ -155,12 +164,13 @@ const Messaging = () => {
                 ))}
                 <div ref={messagesEndRef} />
               </div>
-              <div className="p-3 border-t flex gap-2">
+              <div className="p-2 sm:p-3 border-t flex gap-2">
                 <Input
                   placeholder="Write a message..."
                   value={messageText}
                   onChange={e => setMessageText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                  className="text-base"
                 />
                 <Button size="icon" onClick={sendMessage} disabled={!messageText.trim()}>
                   <Send className="h-4 w-4" />
@@ -201,6 +211,23 @@ const ConversationItem: React.FC<{ userId: string; isSelected: boolean; onClick:
       return count || 0;
     },
     enabled: !!user,
+    refetchInterval: 15000,
+  });
+
+  // Get last message preview
+  const { data: lastMessage } = useQuery({
+    queryKey: ['last-msg', userId, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('messages')
+        .select('content, created_at, sender_id')
+        .or(`and(sender_id.eq.${user!.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user!.id})`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
   });
 
   if (!profile) return null;
@@ -210,24 +237,38 @@ const ConversationItem: React.FC<{ userId: string; isSelected: boolean; onClick:
       onClick={onClick}
       className={`w-full flex items-center gap-3 p-3 text-left hover:bg-secondary transition-colors ${isSelected ? 'bg-secondary' : ''}`}
     >
-      <Avatar className="h-10 w-10">
+      <Avatar className="h-10 w-10 flex-shrink-0">
         <AvatarImage src={profile.avatar_url || ''} />
         <AvatarFallback>{profile.full_name?.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold truncate">{profile.full_name}</p>
-        <p className="text-xs text-muted-foreground truncate">{profile.headline}</p>
+        <div className="flex items-center justify-between">
+          <p className={`text-sm truncate ${unreadCount > 0 ? 'font-bold' : 'font-semibold'}`}>{profile.full_name}</p>
+          {lastMessage && (
+            <span className="text-[10px] text-muted-foreground flex-shrink-0 ml-1">
+              {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: false })}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between">
+          <p className={`text-xs truncate ${unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+            {lastMessage
+              ? `${lastMessage.sender_id === user?.id ? 'You: ' : ''}${lastMessage.content.slice(0, 35)}${lastMessage.content.length > 35 ? '...' : ''}`
+              : profile.headline || 'Start a conversation'
+            }
+          </p>
+          {unreadCount > 0 && (
+            <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1 flex-shrink-0 ml-1">
+              {unreadCount}
+            </span>
+          )}
+        </div>
       </div>
-      {unreadCount > 0 && (
-        <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
-          {unreadCount}
-        </span>
-      )}
     </button>
   );
 };
 
-const ChatHeader: React.FC<{ userId: string }> = ({ userId }) => {
+const ChatHeader: React.FC<{ userId: string; onBack: () => void }> = ({ userId, onBack }) => {
   const { data: profile } = useQuery({
     queryKey: ['profile', userId],
     queryFn: async () => {
@@ -238,6 +279,9 @@ const ChatHeader: React.FC<{ userId: string }> = ({ userId }) => {
 
   return (
     <div className="p-3 border-b flex items-center gap-3">
+      <Button variant="ghost" size="icon" className="md:hidden h-8 w-8 flex-shrink-0" onClick={onBack}>
+        <ArrowLeft className="h-4 w-4" />
+      </Button>
       <Avatar className="h-9 w-9">
         <AvatarImage src={profile?.avatar_url || ''} />
         <AvatarFallback>{profile?.full_name?.charAt(0)}</AvatarFallback>
