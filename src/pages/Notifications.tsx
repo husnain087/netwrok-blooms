@@ -21,6 +21,7 @@ const Notifications = () => {
         .from('notifications')
         .select('*')
         .eq('user_id', user!.id)
+        .not('type', 'in', '("message","connection_request","connection_accepted")')
         .order('created_at', { ascending: false })
         .limit(50);
       return data || [];

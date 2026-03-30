@@ -97,9 +97,9 @@ const Navbar = () => {
 
   const navItems = [
     { to: '/', icon: Home, label: 'Home' },
-    { to: '/network', icon: Users, label: 'My Network' },
+    { to: '/network', icon: Users, label: 'My Network', badge: pendingConnCount },
     { to: '/jobs', icon: Briefcase, label: 'Jobs' },
-    { to: '/messaging', icon: MessageSquare, label: 'Messaging' },
+    { to: '/messaging', icon: MessageSquare, label: 'Messaging', badge: unreadMsgCount },
     { to: '/notifications', icon: Bell, label: 'Notifications', badge: unreadCount },
   ];
 
