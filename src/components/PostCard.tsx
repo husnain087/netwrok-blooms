@@ -390,39 +390,115 @@ const PostCard: React.FC<PostCardProps> = ({ post, isRepost, repostedBy }) => {
 
 const PostOptionsMenu: React.FC<{ post: any; authorName?: string }> = ({ post, authorName }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const isOwner = user?.id === post.user_id;
+
+  const editPost = useMutation({
+    mutationFn: async () => {
+      await supabase.from('posts').update({ content: editContent }).eq('id', post.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-posts'] });
+      setEditOpen(false);
+      toast.success('Post updated!');
+    },
+  });
+
+  const deletePost = useMutation({
+    mutationFn: async () => {
+      // Delete related data first
+      await supabase.from('likes').delete().eq('post_id', post.id);
+      await supabase.from('comments').delete().eq('post_id', post.id);
+      await (supabase.from('reposts') as any).delete().eq('post_id', post.id);
+      await supabase.from('posts').delete().eq('id', post.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-posts'] });
+      setDeleteConfirm(false);
+      toast.success('Post deleted!');
+    },
+  });
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem onClick={() => toast.success('Post saved!')} className="gap-2 cursor-pointer">
-          <Bookmark className="h-4 w-4" /> Save
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/profile/${post.user_id}`); toast.success('Link copied!'); }} className="gap-2 cursor-pointer">
-          <Link2 className="h-4 w-4" /> Copy link to post
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(`<iframe src="${window.location.origin}/profile/${post.user_id}" width="500" height="400"></iframe>`); toast.success('Embed code copied!'); }} className="gap-2 cursor-pointer">
-          <Code className="h-4 w-4" /> Embed this post
-        </DropdownMenuItem>
-        {user?.id !== post.user_id && (
-          <>
-            <DropdownMenuItem className="gap-2 cursor-pointer">
-              <UserMinus className="h-4 w-4" /> Unfollow {authorName || 'user'}
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 cursor-pointer">
-              <Ban className="h-4 w-4" /> Not interested
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 cursor-pointer text-destructive">
-              <Flag className="h-4 w-4" /> Report post
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          {isOwner && (
+            <>
+              <DropdownMenuItem onClick={() => { setEditContent(post.content); setEditOpen(true); }} className="gap-2 cursor-pointer">
+                <Pencil className="h-4 w-4" /> Edit post
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDeleteConfirm(true)} className="gap-2 cursor-pointer text-destructive">
+                <Trash2 className="h-4 w-4" /> Delete post
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem onClick={() => toast.success('Post saved!')} className="gap-2 cursor-pointer">
+            <Bookmark className="h-4 w-4" /> Save
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/profile/${post.user_id}`); toast.success('Link copied!'); }} className="gap-2 cursor-pointer">
+            <Link2 className="h-4 w-4" /> Copy link to post
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(`<iframe src="${window.location.origin}/profile/${post.user_id}" width="500" height="400"></iframe>`); toast.success('Embed code copied!'); }} className="gap-2 cursor-pointer">
+            <Code className="h-4 w-4" /> Embed this post
+          </DropdownMenuItem>
+          {!isOwner && (
+            <>
+              <DropdownMenuItem className="gap-2 cursor-pointer">
+                <UserMinus className="h-4 w-4" /> Unfollow {authorName || 'user'}
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer">
+                <Ban className="h-4 w-4" /> Not interested
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer text-destructive">
+                <Flag className="h-4 w-4" /> Report post
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Post</DialogTitle></DialogHeader>
+          <Textarea
+            value={editContent}
+            onChange={e => setEditContent(e.target.value)}
+            className="min-h-[120px]"
+            placeholder="What do you want to say?"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={() => editPost.mutate()} disabled={!editContent.trim()}>Save</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Delete Post</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Are you sure you want to delete this post? This action cannot be undone.</p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirm(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deletePost.mutate()}>Delete</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
