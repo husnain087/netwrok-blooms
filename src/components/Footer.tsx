@@ -15,12 +15,12 @@ const Footer = () => {
 
   return (
     <footer className="border-t bg-card mt-8">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col items-center text-center">
         <div className="flex items-center gap-2 mb-4">
           <img src={logoImg} alt="Network-Bloom" className="h-6 w-6 rounded-full" />
           <span className="font-bold text-sm text-foreground">Network-Bloom</span>
         </div>
-        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
+        <nav className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
           {links.map((link, i) => (
             <React.Fragment key={link.to}>
               <Link to={link.to} className="hover:text-primary hover:underline transition-colors">

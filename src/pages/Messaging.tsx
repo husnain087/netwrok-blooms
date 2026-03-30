@@ -187,6 +187,22 @@ const ConversationItem: React.FC<{ userId: string; isSelected: boolean; onClick:
     },
   });
 
+  const { user } = useAuth();
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unread-msg-from', userId, user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('sender_id', userId)
+        .eq('receiver_id', user!.id)
+        .eq('is_read', false);
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+
   if (!profile) return null;
 
   return (
@@ -198,10 +214,15 @@ const ConversationItem: React.FC<{ userId: string; isSelected: boolean; onClick:
         <AvatarImage src={profile.avatar_url || ''} />
         <AvatarFallback>{profile.full_name?.charAt(0)}</AvatarFallback>
       </Avatar>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold truncate">{profile.full_name}</p>
         <p className="text-xs text-muted-foreground truncate">{profile.headline}</p>
       </div>
+      {unreadCount > 0 && (
+        <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+          {unreadCount}
+        </span>
+      )}
     </button>
   );
 };
