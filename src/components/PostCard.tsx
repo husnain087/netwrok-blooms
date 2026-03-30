@@ -15,11 +15,6 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 interface PostCardProps {
   post: any;
