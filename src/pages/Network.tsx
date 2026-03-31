@@ -299,6 +299,10 @@ const SuggestionCard: React.FC<{ profile: any }> = ({ profile }) => {
   });
 
   const isPending = existingConn?.status === 'pending' && existingConn?.requester_id === user?.id;
+  
+  // Don't show if already connected or they sent us a request
+  if (existingConn?.status === 'accepted') return null;
+  if (existingConn?.status === 'pending' && existingConn?.receiver_id === user?.id) return null;
 
   return (
     <Card>
