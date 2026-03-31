@@ -146,10 +146,15 @@ const Network = () => {
       <Card>
         <CardHeader><CardTitle>Your Connections ({connections.length})</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          {connections.map((conn: any) => {
-            const otherId = conn.requester_id === user?.id ? conn.receiver_id : conn.requester_id;
-            return <ConnectionCard key={conn.id} userId={otherId} />;
-          })}
+          {(() => {
+            const seen = new Set<string>();
+            return connections.map((conn: any) => {
+              const otherId = conn.requester_id === user?.id ? conn.receiver_id : conn.requester_id;
+              if (seen.has(otherId)) return null;
+              seen.add(otherId);
+              return <ConnectionCard key={conn.id} userId={otherId} />;
+            });
+          })()}
           {connections.length === 0 && <p className="text-sm text-muted-foreground">No connections yet.</p>}
         </CardContent>
       </Card>
