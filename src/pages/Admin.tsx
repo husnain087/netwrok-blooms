@@ -101,7 +101,7 @@ const Admin = () => {
         supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo),
         supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
         (supabase.from('jobs') as any).select('*', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned' as any, true),
+        (supabase.from('profiles') as any).select('*', { count: 'exact', head: true }).eq('is_banned', true),
       ]);
       return {
         newUsersWeek: newUsersWeek || 0,
