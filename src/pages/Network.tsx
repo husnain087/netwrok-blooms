@@ -57,14 +57,21 @@ const Network = () => {
   const { data: suggestions = [] } = useQuery({
     queryKey: ['suggestions', user?.id],
     queryFn: async () => {
-      const connectedIds = connections.map((c: any) =>
-        c.requester_id === user!.id ? c.receiver_id : c.requester_id
-      );
-      const pendingIds = pendingRequests.map((r: any) => r.requester_id);
-      const sentPendingIds = sentPending.map((r: any) => r.receiver_id);
-      const excludeIds = [...connectedIds, ...pendingIds, ...sentPendingIds, user!.id];
+      // Fetch ALL connections (any status) to properly exclude everyone
+      const { data: allConns } = await supabase
+        .from('connections')
+        .select('requester_id, receiver_id')
+        .or(`requester_id.eq.${user!.id},receiver_id.eq.${user!.id}`);
 
-      if (excludeIds.length <= 1) {
+      const excludeIds = new Set<string>([user!.id]);
+      (allConns || []).forEach((c: any) => {
+        excludeIds.add(c.requester_id);
+        excludeIds.add(c.receiver_id);
+      });
+
+      const excludeArr = Array.from(excludeIds);
+
+      if (excludeArr.length <= 1) {
         const { data } = await supabase.from('profiles').select('*').neq('user_id', user!.id).limit(10);
         return data || [];
       }
@@ -72,11 +79,11 @@ const Network = () => {
       const { data } = await supabase
         .from('profiles')
         .select('*')
-        .not('user_id', 'in', `(${excludeIds.join(',')})`)
+        .not('user_id', 'in', `(${excludeArr.join(',')})`)
         .limit(10);
       return data || [];
     },
-    enabled: !!user && connections !== undefined,
+    enabled: !!user,
   });
 
   const respondToRequest = useMutation({
