@@ -57,14 +57,21 @@ const Network = () => {
   const { data: suggestions = [] } = useQuery({
     queryKey: ['suggestions', user?.id],
     queryFn: async () => {
-      const connectedIds = connections.map((c: any) =>
-        c.requester_id === user!.id ? c.receiver_id : c.requester_id
-      );
-      const pendingIds = pendingRequests.map((r: any) => r.requester_id);
-      const sentPendingIds = sentPending.map((r: any) => r.receiver_id);
-      const excludeIds = [...connectedIds, ...pendingIds, ...sentPendingIds, user!.id];
+      // Fetch ALL connections (any status) to properly exclude everyone
+      const { data: allConns } = await supabase
+        .from('connections')
+        .select('requester_id, receiver_id')
+        .or(`requester_id.eq.${user!.id},receiver_id.eq.${user!.id}`);
 
-      if (excludeIds.length <= 1) {
+      const excludeIds = new Set<string>([user!.id]);
+      (allConns || []).forEach((c: any) => {
+        excludeIds.add(c.requester_id);
+        excludeIds.add(c.receiver_id);
+      });
+
+      const excludeArr = Array.from(excludeIds);
+
+      if (excludeArr.length <= 1) {
         const { data } = await supabase.from('profiles').select('*').neq('user_id', user!.id).limit(10);
         return data || [];
       }
@@ -72,11 +79,11 @@ const Network = () => {
       const { data } = await supabase
         .from('profiles')
         .select('*')
-        .not('user_id', 'in', `(${excludeIds.join(',')})`)
+        .not('user_id', 'in', `(${excludeArr.join(',')})`)
         .limit(10);
       return data || [];
     },
-    enabled: !!user && connections !== undefined,
+    enabled: !!user,
   });
 
   const respondToRequest = useMutation({
@@ -139,10 +146,15 @@ const Network = () => {
       <Card>
         <CardHeader><CardTitle>Your Connections ({connections.length})</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          {connections.map((conn: any) => {
-            const otherId = conn.requester_id === user?.id ? conn.receiver_id : conn.requester_id;
-            return <ConnectionCard key={conn.id} userId={otherId} />;
-          })}
+          {(() => {
+            const seen = new Set<string>();
+            return connections.map((conn: any) => {
+              const otherId = conn.requester_id === user?.id ? conn.receiver_id : conn.requester_id;
+              if (seen.has(otherId)) return null;
+              seen.add(otherId);
+              return <ConnectionCard key={conn.id} userId={otherId} />;
+            });
+          })()}
           {connections.length === 0 && <p className="text-sm text-muted-foreground">No connections yet.</p>}
         </CardContent>
       </Card>
@@ -287,6 +299,10 @@ const SuggestionCard: React.FC<{ profile: any }> = ({ profile }) => {
   });
 
   const isPending = existingConn?.status === 'pending' && existingConn?.requester_id === user?.id;
+  
+  // Don't show if already connected or they sent us a request
+  if (existingConn?.status === 'accepted') return null;
+  if (existingConn?.status === 'pending' && existingConn?.receiver_id === user?.id) return null;
 
   return (
     <Card>

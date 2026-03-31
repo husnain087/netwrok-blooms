@@ -51,22 +51,24 @@ const SuggestedConnections = () => {
   const { data: suggestions = [] } = useQuery({
     queryKey: ['suggested-connections', user?.id],
     queryFn: async () => {
-      const { data: connections } = await supabase
+      // Fetch ALL connections (any status) to exclude everyone already connected/pending
+      const { data: allConns } = await supabase
         .from('connections')
         .select('requester_id, receiver_id')
         .or(`requester_id.eq.${user!.id},receiver_id.eq.${user!.id}`);
 
-      const connectedIds = new Set<string>();
-      connectedIds.add(user!.id);
-      connections?.forEach((c: any) => {
-        connectedIds.add(c.requester_id);
-        connectedIds.add(c.receiver_id);
+      const excludeIds = new Set<string>([user!.id]);
+      (allConns || []).forEach((c: any) => {
+        excludeIds.add(c.requester_id);
+        excludeIds.add(c.receiver_id);
       });
+
+      const excludeArr = Array.from(excludeIds);
 
       const { data: profiles } = await supabase
         .from('profiles')
         .select('*')
-        .not('user_id', 'in', `(${Array.from(connectedIds).join(',')})`)
+        .not('user_id', 'in', `(${excludeArr.join(',')})`)
         .limit(5);
 
       return profiles || [];
