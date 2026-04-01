@@ -382,6 +382,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_message: string | null
           avatar_url: string | null
           cover_url: string | null
           created_at: string
@@ -389,6 +390,7 @@ export type Database = {
           headline: string | null
           id: string
           industry: string | null
+          is_banned: boolean | null
           location: string | null
           summary: string | null
           updated_at: string
@@ -396,6 +398,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          admin_message?: string | null
           avatar_url?: string | null
           cover_url?: string | null
           created_at?: string
@@ -403,6 +406,7 @@ export type Database = {
           headline?: string | null
           id?: string
           industry?: string | null
+          is_banned?: boolean | null
           location?: string | null
           summary?: string | null
           updated_at?: string
@@ -410,6 +414,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          admin_message?: string | null
           avatar_url?: string | null
           cover_url?: string | null
           created_at?: string
@@ -417,6 +422,7 @@ export type Database = {
           headline?: string | null
           id?: string
           industry?: string | null
+          is_banned?: boolean | null
           location?: string | null
           summary?: string | null
           updated_at?: string
