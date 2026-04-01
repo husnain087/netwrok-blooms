@@ -6,22 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, BarChart3, MessageCircle, Bell } from 'lucide-react';
+import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Navigate } from 'react-router-dom';
+
+type UserAction = { type: 'ban' | 'suspend' | 'delete'; userId: string; userName: string } | null;
 
 const Admin = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [userAction, setUserAction] = useState<UserAction>(null);
+  const [adminMessage, setAdminMessage] = useState('');
 
-  // Check if current user is admin
   const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
     queryKey: ['is-admin', user?.id],
     queryFn: async () => {
@@ -31,7 +33,6 @@ const Admin = () => {
     enabled: !!user,
   });
 
-  // All profiles
   const { data: profiles = [] } = useQuery({
     queryKey: ['admin-profiles'],
     queryFn: async () => {
@@ -41,7 +42,6 @@ const Admin = () => {
     enabled: !!isAdmin,
   });
 
-  // All posts
   const { data: posts = [] } = useQuery({
     queryKey: ['admin-posts'],
     queryFn: async () => {
@@ -51,7 +51,6 @@ const Admin = () => {
     enabled: !!isAdmin,
   });
 
-  // All jobs
   const { data: jobs = [] } = useQuery({
     queryKey: ['admin-jobs'],
     queryFn: async () => {
@@ -61,17 +60,25 @@ const Admin = () => {
     enabled: !!isAdmin,
   });
 
-  // Stats
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      const [{ count: userCount }, { count: postCount }, { count: jobCount }, { count: connCount }] = await Promise.all([
+      const [{ count: userCount }, { count: postCount }, { count: jobCount }, { count: connCount }, { count: msgCount }, { count: bannedCount }] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('posts').select('*', { count: 'exact', head: true }),
         (supabase.from('jobs') as any).select('*', { count: 'exact', head: true }),
         supabase.from('connections').select('*', { count: 'exact', head: true }).eq('status', 'accepted'),
+        supabase.from('messages').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true),
       ]);
-      return { users: userCount || 0, posts: postCount || 0, jobs: jobCount || 0, connections: connCount || 0 };
+      return {
+        users: userCount || 0,
+        posts: postCount || 0,
+        jobs: jobCount || 0,
+        connections: connCount || 0,
+        messages: msgCount || 0,
+        banned: bannedCount || 0,
+      };
     },
     enabled: !!isAdmin,
   });
@@ -95,9 +102,54 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       toast.success('Job deleted');
     },
   });
+
+  const handleUserAction = async () => {
+    if (!userAction) return;
+    const { type, userId } = userAction;
+
+    try {
+      if (type === 'ban') {
+        await supabase.from('profiles').update({
+          is_banned: true,
+          admin_message: adminMessage || 'Your account has been banned by an administrator.',
+        }).eq('user_id', userId);
+        toast.success('User banned successfully');
+      } else if (type === 'suspend') {
+        await supabase.from('profiles').update({
+          is_banned: true,
+          admin_message: adminMessage || 'Your account has been temporarily suspended.',
+        }).eq('user_id', userId);
+        toast.success('User suspended successfully');
+      } else if (type === 'delete') {
+        // Delete all user content
+        await supabase.from('posts').delete().eq('user_id', userId);
+        await supabase.from('comments').delete().eq('user_id', userId);
+        await supabase.from('likes').delete().eq('user_id', userId);
+        await supabase.from('connections').delete().or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+        await supabase.from('messages').delete().or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+        await supabase.from('notifications').delete().or(`user_id.eq.${userId},actor_id.eq.${userId}`);
+        await supabase.from('profiles').delete().eq('user_id', userId);
+        toast.success('User account and all data deleted');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      setUserAction(null);
+      setAdminMessage('');
+    } catch (err: any) {
+      toast.error(err.message || 'Action failed');
+    }
+  };
+
+  const unbanUser = async (userId: string) => {
+    await supabase.from('profiles').update({ is_banned: false, admin_message: null }).eq('user_id', userId);
+    queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+    toast.success('User unbanned');
+  };
 
   if (checkingAdmin) return <div className="text-center py-8 text-muted-foreground animate-pulse">Checking access...</div>;
   if (!isAdmin) return <Navigate to="/" replace />;
@@ -106,57 +158,70 @@ const Admin = () => {
     !searchQuery || p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.headline?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const activeUsers = profiles.filter((p: any) => !p.is_banned).length;
+  const bannedUsers = profiles.filter((p: any) => p.is_banned).length;
+
+  const actionLabels = {
+    ban: { title: 'Ban User', desc: 'This will block the user from accessing the platform.', btnText: 'Ban User', icon: Ban },
+    suspend: { title: 'Suspend User', desc: 'This will temporarily suspend the user account.', btnText: 'Suspend User', icon: PauseCircle },
+    delete: { title: 'Delete Account', desc: 'This will permanently delete the user account and all their data. This action cannot be undone.', btnText: 'Delete Account', icon: Trash2 },
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Shield className="h-8 w-8 text-primary" />
+        <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
+          <Shield className="h-6 w-6 text-primary-foreground" />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Manage users, posts, and platform activity</p>
+          <h1 className="text-2xl font-extrabold">Admin Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Manage users, content, and platform activity</p>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: 'Users', value: stats?.users || 0, icon: Users, color: 'text-primary' },
-          { label: 'Posts', value: stats?.posts || 0, icon: FileText, color: 'text-linkedin-green' },
-          { label: 'Jobs', value: stats?.jobs || 0, icon: Briefcase, color: 'text-linkedin-warm' },
-          { label: 'Connections', value: stats?.connections || 0, icon: MessageCircle, color: 'text-destructive' },
+          { label: 'Total Users', value: stats?.users || 0, icon: Users, color: 'bg-primary/10 text-primary' },
+          { label: 'Active Users', value: activeUsers, icon: Activity, color: 'bg-green-500/10 text-green-600' },
+          { label: 'Banned', value: bannedUsers, icon: Ban, color: 'bg-destructive/10 text-destructive' },
+          { label: 'Total Posts', value: stats?.posts || 0, icon: FileText, color: 'bg-blue-500/10 text-blue-600' },
+          { label: 'Total Jobs', value: stats?.jobs || 0, icon: Briefcase, color: 'bg-orange-500/10 text-orange-600' },
+          { label: 'Messages', value: stats?.messages || 0, icon: MessageCircle, color: 'bg-purple-500/10 text-purple-600' },
         ].map(stat => (
-          <Card key={stat.label}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <stat.icon className={`h-8 w-8 ${stat.color}`} />
-              <div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
+          <Card key={stat.label} className="rounded-xl">
+            <CardContent className="p-4 text-center space-y-2">
+              <div className={`mx-auto h-10 w-10 rounded-lg flex items-center justify-center ${stat.color}`}>
+                <stat.icon className="h-5 w-5" />
               </div>
+              <p className="text-2xl font-extrabold">{stat.value}</p>
+              <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <Tabs defaultValue="users">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="posts">Posts</TabsTrigger>
-          <TabsTrigger value="jobs">Jobs</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 rounded-xl">
+          <TabsTrigger value="users" className="font-bold">Users ({profiles.length})</TabsTrigger>
+          <TabsTrigger value="posts" className="font-bold">Posts ({posts.length})</TabsTrigger>
+          <TabsTrigger value="jobs" className="font-bold">Jobs ({jobs.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search users..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
+            <Input placeholder="Search users by name or headline..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 rounded-xl" />
           </div>
-          <Card>
+          <Card className="rounded-xl overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead className="hidden md:table-cell">Headline</TableHead>
-                  <TableHead className="hidden md:table-cell">Location</TableHead>
                   <TableHead className="hidden md:table-cell">Joined</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -164,57 +229,85 @@ const Admin = () => {
                   <TableRow key={p.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
+                        <Avatar className="h-9 w-9">
                           <AvatarImage src={p.avatar_url || ''} />
-                          <AvatarFallback className="text-xs">{p.full_name?.charAt(0) || '?'}</AvatarFallback>
+                          <AvatarFallback className="text-xs font-bold">{p.full_name?.charAt(0) || '?'}</AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-sm">{p.full_name || 'No name'}</span>
+                        <div>
+                          <p className="font-bold text-sm">{p.full_name || 'No name'}</p>
+                          <p className="text-xs text-muted-foreground md:hidden">{p.headline?.slice(0, 30) || '-'}</p>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{p.headline || '-'}</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{p.location || '-'}</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground max-w-[200px] truncate">{p.headline || '-'}</TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}
                     </TableCell>
                     <TableCell>
+                      {p.is_banned ? (
+                        <Badge variant="destructive" className="text-xs">Banned</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 border-0">Active</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
                       {p.user_id !== user?.id && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => setConfirmDelete(p.user_id)}
-                        >
-                          <Ban className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 justify-end">
+                          {p.is_banned ? (
+                            <Button variant="ghost" size="sm" className="h-8 text-xs text-green-600 hover:text-green-700" onClick={() => unbanUser(p.user_id)}>
+                              <PlayCircle className="h-4 w-4 mr-1" /> Unban
+                            </Button>
+                          ) : (
+                            <>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-orange-500 hover:text-orange-600" title="Suspend"
+                                onClick={() => setUserAction({ type: 'suspend', userId: p.user_id, userName: p.full_name || 'this user' })}>
+                                <PauseCircle className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Ban"
+                                onClick={() => setUserAction({ type: 'ban', userId: p.user_id, userName: p.full_name || 'this user' })}>
+                                <Ban className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete Account"
+                            onClick={() => setUserAction({ type: 'delete', userId: p.user_id, userName: p.full_name || 'this user' })}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
                 ))}
+                {filteredProfiles.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No users found</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
         </TabsContent>
 
         <TabsContent value="posts" className="space-y-4">
-          <Card>
+          <Card className="rounded-xl overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Content</TableHead>
                   <TableHead className="hidden md:table-cell">Type</TableHead>
                   <TableHead className="hidden md:table-cell">Created</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {posts.map((p: any) => (
                   <TableRow key={p.id}>
-                    <TableCell className="max-w-xs truncate text-sm">{p.content?.slice(0, 80)}</TableCell>
+                    <TableCell className="max-w-xs truncate text-sm font-medium">{p.content?.slice(0, 80)}</TableCell>
                     <TableCell className="hidden md:table-cell"><Badge variant="secondary">{p.post_type}</Badge></TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deletePost.mutate(p.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -227,23 +320,23 @@ const Admin = () => {
         </TabsContent>
 
         <TabsContent value="jobs" className="space-y-4">
-          <Card>
+          <Card className="rounded-xl overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead className="hidden md:table-cell">Company</TableHead>
                   <TableHead className="hidden md:table-cell">Location</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {jobs.map((j: any) => (
                   <TableRow key={j.id}>
-                    <TableCell className="text-sm font-medium">{j.title}</TableCell>
+                    <TableCell className="text-sm font-bold">{j.title}</TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{j.company}</TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{j.location}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteJob.mutate(j.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -256,29 +349,50 @@ const Admin = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Confirm ban dialog */}
-      <Dialog open={!!confirmDelete} onOpenChange={() => setConfirmDelete(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader><DialogTitle>Ban User</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">This will delete all content by this user. Are you sure?</p>
-          <div className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setConfirmDelete(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={async () => {
-              if (!confirmDelete) return;
-              // Delete user content
-              await supabase.from('posts').delete().eq('user_id', confirmDelete);
-              await supabase.from('comments').delete().eq('user_id', confirmDelete);
-              await supabase.from('likes').delete().eq('user_id', confirmDelete);
-              await supabase.from('connections').delete().or(`requester_id.eq.${confirmDelete},receiver_id.eq.${confirmDelete}`);
-              await supabase.from('profiles').delete().eq('user_id', confirmDelete);
-              queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
-              queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-              setConfirmDelete(null);
-              toast.success('User banned and content removed');
-            }}>
-              Yes, Ban User
-            </Button>
-          </div>
+      {/* User Action Dialog */}
+      <Dialog open={!!userAction} onOpenChange={() => { setUserAction(null); setAdminMessage(''); }}>
+        <DialogContent className="sm:max-w-md rounded-xl">
+          {userAction && (() => {
+            const config = actionLabels[userAction.type];
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <config.icon className="h-5 w-5 text-destructive" />
+                    {config.title}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {config.desc}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 mt-2">
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <p className="text-sm font-bold text-destructive flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      User: {userAction.userName}
+                    </p>
+                  </div>
+                  {userAction.type !== 'delete' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Message to user (optional)</label>
+                      <Input
+                        placeholder="Reason for this action..."
+                        value={adminMessage}
+                        onChange={e => setAdminMessage(e.target.value)}
+                        className="rounded-xl"
+                      />
+                    </div>
+                  )}
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" className="rounded-xl" onClick={() => { setUserAction(null); setAdminMessage(''); }}>Cancel</Button>
+                    <Button variant="destructive" className="rounded-xl" onClick={handleUserAction}>
+                      {config.btnText}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
