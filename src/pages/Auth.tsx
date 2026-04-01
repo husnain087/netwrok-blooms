@@ -154,13 +154,20 @@ const Auth = () => {
               {loading ? 'Please wait...' : isLogin ? 'Sign in' : 'Join'}
             </Button>
           </form>
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <button
               onClick={() => { setIsLogin(!isLogin); setAgreedToTerms(false); }}
               className="text-sm text-primary hover:underline"
             >
               {isLogin ? "New here? Join now" : 'Already have an account? Sign in'}
             </button>
+            {isLogin && (
+              <div>
+                <Link to="/admin-login" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                  Login as Admin
+                </Link>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
