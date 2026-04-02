@@ -239,10 +239,11 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users">
-        <TabsList className="grid w-full grid-cols-3 rounded-xl">
-          <TabsTrigger value="users" className="font-bold">Users ({profiles.length})</TabsTrigger>
-          <TabsTrigger value="posts" className="font-bold">Posts ({posts.length})</TabsTrigger>
-          <TabsTrigger value="jobs" className="font-bold">Jobs ({jobs.length})</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 rounded-xl">
+          <TabsTrigger value="users" className="font-bold text-xs sm:text-sm">Users ({profiles.length})</TabsTrigger>
+          <TabsTrigger value="posts" className="font-bold text-xs sm:text-sm">Posts ({posts.length})</TabsTrigger>
+          <TabsTrigger value="jobs" className="font-bold text-xs sm:text-sm">Jobs ({jobs.length})</TabsTrigger>
+          <TabsTrigger value="verify" className="font-bold text-xs sm:text-sm">Verify ({verificationRequests.filter((r: any) => r.status === 'pending').length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
