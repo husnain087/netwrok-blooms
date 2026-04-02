@@ -281,7 +281,7 @@ const Profile = () => {
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold">{profile.full_name || 'Your Name'}</h1>
                 {(profile as any).is_verified && (
-                  <BadgeCheck className="h-6 w-6 text-primary fill-primary/20" title="Verified" />
+                  <BadgeCheck className="h-6 w-6 text-primary fill-primary/20" />
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">{profile.headline || 'Add a headline'}</p>
