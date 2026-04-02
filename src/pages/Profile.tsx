@@ -35,6 +35,8 @@ const Profile = () => {
 
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ full_name: '', headline: '', summary: '', location: '', website: '', industry: '' });
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [workEmail, setWorkEmail] = useState('');
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile', userId],
