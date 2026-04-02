@@ -60,6 +60,15 @@ const Admin = () => {
     enabled: !!isAdmin,
   });
 
+  const { data: verificationRequests = [] } = useQuery({
+    queryKey: ['admin-verifications'],
+    queryFn: async () => {
+      const { data } = await (supabase.from('verification_requests') as any).select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: !!isAdmin,
+  });
+
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
