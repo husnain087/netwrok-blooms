@@ -314,6 +314,19 @@ const Profile = () => {
                   }}>Edit Profile</Button>
                   <AddSectionDropdown userId={user!.id} profile={profile} setEditOpen={setEditOpen} setEditForm={setEditForm} />
                   <ResourcesDropdown userId={userId!} profile={profile} />
+                  {!(profile as any).is_verified && (
+                    <>
+                      {!verificationRequest || verificationRequest.status === 'rejected' ? (
+                        <Button size="sm" variant="outline" className="rounded-full" onClick={() => setVerifyOpen(true)}>
+                          <BadgeCheck className="h-4 w-4 mr-1" /> Get Verified
+                        </Button>
+                      ) : verificationRequest.status === 'pending' ? (
+                        <Badge variant="secondary" className="rounded-full px-3 py-1.5 text-xs">
+                          <BadgeCheck className="h-3 w-3 mr-1" /> Verification Pending
+                        </Badge>
+                      ) : null}
+                    </>
+                  )}
                 </>
               ) : (
                 <>
