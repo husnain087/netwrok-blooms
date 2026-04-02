@@ -391,11 +391,14 @@ export type Database = {
           id: string
           industry: string | null
           is_banned: boolean | null
+          is_verified: boolean | null
           location: string | null
           summary: string | null
           updated_at: string
           user_id: string
+          verification_status: string | null
           website: string | null
+          work_email: string | null
         }
         Insert: {
           admin_message?: string | null
@@ -407,11 +410,14 @@ export type Database = {
           id?: string
           industry?: string | null
           is_banned?: boolean | null
+          is_verified?: boolean | null
           location?: string | null
           summary?: string | null
           updated_at?: string
           user_id: string
+          verification_status?: string | null
           website?: string | null
+          work_email?: string | null
         }
         Update: {
           admin_message?: string | null
@@ -423,11 +429,14 @@ export type Database = {
           id?: string
           industry?: string | null
           is_banned?: boolean | null
+          is_verified?: boolean | null
           location?: string | null
           summary?: string | null
           updated_at?: string
           user_id?: string
+          verification_status?: string | null
           website?: string | null
+          work_email?: string | null
         }
         Relationships: []
       }
@@ -499,6 +508,39 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_requests: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+          work_email: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+          work_email: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+          work_email?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -522,7 +564,15 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role:
+        | "admin"
+        | "moderator"
+        | "user"
+        | "content_manager"
+        | "support_agent"
+        | "analyst"
+        | "recruiter"
+        | "verified_user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -650,7 +700,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: [
+        "admin",
+        "moderator",
+        "user",
+        "content_manager",
+        "support_agent",
+        "analyst",
+        "recruiter",
+        "verified_user",
+      ],
     },
   },
 } as const
