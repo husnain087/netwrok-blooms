@@ -385,6 +385,71 @@ const Admin = () => {
             </Table>
           </Card>
         </TabsContent>
+
+        <TabsContent value="verify" className="space-y-4">
+          <Card className="rounded-xl overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2"><BadgeCheck className="h-5 w-5 text-primary" /> Verification Requests</CardTitle>
+            </CardHeader>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Work Email</TableHead>
+                  <TableHead className="hidden md:table-cell">Requested</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {verificationRequests.map((req: any) => {
+                  const reqProfile = profiles.find((p: any) => p.user_id === req.user_id);
+                  return (
+                    <TableRow key={req.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={reqProfile?.avatar_url || ''} />
+                            <AvatarFallback className="text-xs">{reqProfile?.full_name?.charAt(0) || '?'}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-bold text-sm">{reqProfile?.full_name || 'Unknown'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{req.work_email}</span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell>
+                        {req.status === 'pending' && <Badge variant="secondary" className="text-xs bg-yellow-500/10 text-yellow-600 border-0">Pending</Badge>}
+                        {req.status === 'approved' && <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 border-0">Approved</Badge>}
+                        {req.status === 'rejected' && <Badge variant="destructive" className="text-xs">Rejected</Badge>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {req.status === 'pending' && (
+                          <div className="flex items-center gap-1 justify-end">
+                            <Button variant="ghost" size="sm" className="h-8 text-xs text-green-600 hover:text-green-700" onClick={() => handleVerification(req.id, req.user_id, true)}>
+                              <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive" onClick={() => handleVerification(req.id, req.user_id, false)}>
+                              <XCircle className="h-4 w-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {verificationRequests.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No verification requests</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* User Action Dialog */}
