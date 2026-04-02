@@ -378,7 +378,29 @@ const Profile = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Suggested for you */}
+        {/* Verification Request Dialog */}
+        <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><BadgeCheck className="h-5 w-5 text-primary" /> Request Verification</DialogTitle></DialogHeader>
+            <p className="text-sm text-muted-foreground">Enter your official work email. The admin will review your request and verify your identity.</p>
+            <div className="space-y-3 mt-2">
+              <Input
+                type="email"
+                placeholder="your.name@company.com"
+                value={workEmail}
+                onChange={e => setWorkEmail(e.target.value)}
+                className="rounded-xl"
+              />
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" className="rounded-xl" onClick={() => setVerifyOpen(false)}>Cancel</Button>
+                <Button className="rounded-xl" disabled={!workEmail.includes('@')} onClick={() => submitVerification.mutate(workEmail)}>
+                  <Mail className="h-4 w-4 mr-1" /> Submit Request
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {isOwn && (
           <Card>
             <CardHeader className="pb-2">
