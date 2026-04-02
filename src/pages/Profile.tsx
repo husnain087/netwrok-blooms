@@ -16,7 +16,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import {
   Camera, Pencil, Plus, MapPin, Globe, Briefcase, GraduationCap,
   Eye, BarChart3, Search, Users, MessageSquare, ChevronRight, Shield, Star, Trash2,
-  ChevronUp, ChevronDown, Send, Bookmark, Activity, Info, FileText, Award, FolderOpen, BookOpen, Heart
+  ChevronUp, ChevronDown, Send, Bookmark, Activity, Info, FileText, Award, FolderOpen, BookOpen, Heart,
+  BadgeCheck, Mail
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PostCard from '@/components/PostCard';
@@ -34,6 +35,8 @@ const Profile = () => {
 
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ full_name: '', headline: '', summary: '', location: '', website: '', industry: '' });
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [workEmail, setWorkEmail] = useState('');
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile', userId],
@@ -104,6 +107,37 @@ const Profile = () => {
       return data;
     },
     enabled: !!user && !!userId && !isOwn,
+  });
+
+  const { data: verificationRequest } = useQuery({
+    queryKey: ['verification-request', userId],
+    queryFn: async () => {
+      const { data } = await (supabase.from('verification_requests') as any)
+        .select('*')
+        .eq('user_id', userId!)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const submitVerification = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await (supabase.from('verification_requests') as any).insert({
+        user_id: user!.id,
+        work_email: email,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['verification-request', userId] });
+      setVerifyOpen(false);
+      setWorkEmail('');
+      toast.success('Verification request submitted! Admin will review it.');
+    },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const updateProfile = useMutation({
@@ -244,7 +278,12 @@ const Profile = () => {
             </div>
 
             <div className="mt-3">
-              <h1 className="text-2xl font-bold">{profile.full_name || 'Your Name'}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">{profile.full_name || 'Your Name'}</h1>
+                {(profile as any).is_verified && (
+                  <BadgeCheck className="h-6 w-6 text-primary fill-primary/20" />
+                )}
+              </div>
               <p className="text-sm text-muted-foreground mt-0.5">{profile.headline || 'Add a headline'}</p>
               <div className="flex items-center gap-3 mt-1.5 text-sm text-muted-foreground">
                 {profile.location && (
@@ -275,6 +314,19 @@ const Profile = () => {
                   }}>Edit Profile</Button>
                   <AddSectionDropdown userId={user!.id} profile={profile} setEditOpen={setEditOpen} setEditForm={setEditForm} />
                   <ResourcesDropdown userId={userId!} profile={profile} />
+                  {!(profile as any).is_verified && (
+                    <>
+                      {!verificationRequest || verificationRequest.status === 'rejected' ? (
+                        <Button size="sm" variant="outline" className="rounded-full" onClick={() => setVerifyOpen(true)}>
+                          <BadgeCheck className="h-4 w-4 mr-1" /> Get Verified
+                        </Button>
+                      ) : verificationRequest.status === 'pending' ? (
+                        <Badge variant="secondary" className="rounded-full px-3 py-1.5 text-xs">
+                          <BadgeCheck className="h-3 w-3 mr-1" /> Verification Pending
+                        </Badge>
+                      ) : null}
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -326,7 +378,29 @@ const Profile = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Suggested for you */}
+        {/* Verification Request Dialog */}
+        <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><BadgeCheck className="h-5 w-5 text-primary" /> Request Verification</DialogTitle></DialogHeader>
+            <p className="text-sm text-muted-foreground">Enter your official work email. The admin will review your request and verify your identity.</p>
+            <div className="space-y-3 mt-2">
+              <Input
+                type="email"
+                placeholder="your.name@company.com"
+                value={workEmail}
+                onChange={e => setWorkEmail(e.target.value)}
+                className="rounded-xl"
+              />
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" className="rounded-xl" onClick={() => setVerifyOpen(false)}>Cancel</Button>
+                <Button className="rounded-xl" disabled={!workEmail.includes('@')} onClick={() => submitVerification.mutate(workEmail)}>
+                  <Mail className="h-4 w-4 mr-1" /> Submit Request
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {isOwn && (
           <Card>
             <CardHeader className="pb-2">

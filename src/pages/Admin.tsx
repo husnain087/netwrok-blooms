@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp, BadgeCheck, Mail, CheckCircle, XCircle, UserCog } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Navigate } from 'react-router-dom';
@@ -55,6 +56,15 @@ const Admin = () => {
     queryKey: ['admin-jobs'],
     queryFn: async () => {
       const { data } = await (supabase.from('jobs') as any).select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    },
+    enabled: !!isAdmin,
+  });
+
+  const { data: verificationRequests = [] } = useQuery({
+    queryKey: ['admin-verifications'],
+    queryFn: async () => {
+      const { data } = await (supabase.from('verification_requests') as any).select('*').order('created_at', { ascending: false });
       return data || [];
     },
     enabled: !!isAdmin,
@@ -151,7 +161,35 @@ const Admin = () => {
     toast.success('User unbanned');
   };
 
-  if (checkingAdmin) return <div className="text-center py-8 text-muted-foreground animate-pulse">Checking access...</div>;
+  const handleVerification = async (requestId: string, userId: string, approved: boolean) => {
+    try {
+      await (supabase.from('verification_requests') as any)
+        .update({ status: approved ? 'approved' : 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: user!.id })
+        .eq('id', requestId);
+      await supabase.from('profiles').update({ is_verified: approved } as any).eq('user_id', userId);
+      if (approved) {
+        // Also add verified_user role
+        await supabase.from('user_roles').insert({ user_id: userId, role: 'verified_user' as any });
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-verifications'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      toast.success(approved ? 'User verified!' : 'Verification rejected');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const assignRole = async (userId: string, role: string) => {
+    try {
+      await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
+      toast.success(`Role "${role}" assigned`);
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+
   if (!isAdmin) return <Navigate to="/" replace />;
 
   const filteredProfiles = profiles.filter((p: any) =>
@@ -202,10 +240,11 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users">
-        <TabsList className="grid w-full grid-cols-3 rounded-xl">
-          <TabsTrigger value="users" className="font-bold">Users ({profiles.length})</TabsTrigger>
-          <TabsTrigger value="posts" className="font-bold">Posts ({posts.length})</TabsTrigger>
-          <TabsTrigger value="jobs" className="font-bold">Jobs ({jobs.length})</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 rounded-xl">
+          <TabsTrigger value="users" className="font-bold text-xs sm:text-sm">Users ({profiles.length})</TabsTrigger>
+          <TabsTrigger value="posts" className="font-bold text-xs sm:text-sm">Posts ({posts.length})</TabsTrigger>
+          <TabsTrigger value="jobs" className="font-bold text-xs sm:text-sm">Jobs ({jobs.length})</TabsTrigger>
+          <TabsTrigger value="verify" className="font-bold text-xs sm:text-sm">Verify ({verificationRequests.filter((r: any) => r.status === 'pending').length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
@@ -269,6 +308,20 @@ const Admin = () => {
                               </Button>
                             </>
                           )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Assign Role">
+                                <UserCog className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {['moderator', 'content_manager', 'support_agent', 'analyst', 'recruiter'].map(role => (
+                                <DropdownMenuItem key={role} onClick={() => assignRole(p.user_id, role)}>
+                                  Assign {role.replace('_', ' ')}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete Account"
                             onClick={() => setUserAction({ type: 'delete', userId: p.user_id, userName: p.full_name || 'this user' })}>
                             <Trash2 className="h-4 w-4" />
@@ -343,6 +396,71 @@ const Admin = () => {
                     </TableCell>
                   </TableRow>
                 ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="verify" className="space-y-4">
+          <Card className="rounded-xl overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2"><BadgeCheck className="h-5 w-5 text-primary" /> Verification Requests</CardTitle>
+            </CardHeader>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Work Email</TableHead>
+                  <TableHead className="hidden md:table-cell">Requested</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {verificationRequests.map((req: any) => {
+                  const reqProfile = profiles.find((p: any) => p.user_id === req.user_id);
+                  return (
+                    <TableRow key={req.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={reqProfile?.avatar_url || ''} />
+                            <AvatarFallback className="text-xs">{reqProfile?.full_name?.charAt(0) || '?'}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-bold text-sm">{reqProfile?.full_name || 'Unknown'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{req.work_email}</span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell>
+                        {req.status === 'pending' && <Badge variant="secondary" className="text-xs bg-yellow-500/10 text-yellow-600 border-0">Pending</Badge>}
+                        {req.status === 'approved' && <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 border-0">Approved</Badge>}
+                        {req.status === 'rejected' && <Badge variant="destructive" className="text-xs">Rejected</Badge>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {req.status === 'pending' && (
+                          <div className="flex items-center gap-1 justify-end">
+                            <Button variant="ghost" size="sm" className="h-8 text-xs text-green-600 hover:text-green-700" onClick={() => handleVerification(req.id, req.user_id, true)}>
+                              <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive" onClick={() => handleVerification(req.id, req.user_id, false)}>
+                              <XCircle className="h-4 w-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {verificationRequests.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No verification requests</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
