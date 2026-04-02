@@ -160,7 +160,35 @@ const Admin = () => {
     toast.success('User unbanned');
   };
 
-  if (checkingAdmin) return <div className="text-center py-8 text-muted-foreground animate-pulse">Checking access...</div>;
+  const handleVerification = async (requestId: string, userId: string, approved: boolean) => {
+    try {
+      await (supabase.from('verification_requests') as any)
+        .update({ status: approved ? 'approved' : 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: user!.id })
+        .eq('id', requestId);
+      await supabase.from('profiles').update({ is_verified: approved } as any).eq('user_id', userId);
+      if (approved) {
+        // Also add verified_user role
+        await supabase.from('user_roles').insert({ user_id: userId, role: 'verified_user' as any });
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-verifications'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      toast.success(approved ? 'User verified!' : 'Verification rejected');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const assignRole = async (userId: string, role: string) => {
+    try {
+      await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
+      toast.success(`Role "${role}" assigned`);
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+
   if (!isAdmin) return <Navigate to="/" replace />;
 
   const filteredProfiles = profiles.filter((p: any) =>
