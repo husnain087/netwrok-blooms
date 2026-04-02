@@ -109,7 +109,38 @@ const Profile = () => {
     enabled: !!user && !!userId && !isOwn,
   });
 
-  const updateProfile = useMutation({
+  const { data: verificationRequest } = useQuery({
+    queryKey: ['verification-request', userId],
+    queryFn: async () => {
+      const { data } = await (supabase.from('verification_requests') as any)
+        .select('*')
+        .eq('user_id', userId!)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const submitVerification = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await (supabase.from('verification_requests') as any).insert({
+        user_id: user!.id,
+        work_email: email,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['verification-request', userId] });
+      setVerifyOpen(false);
+      setWorkEmail('');
+      toast.success('Verification request submitted! Admin will review it.');
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+
     mutationFn: async (updates: any) => {
       const { error } = await supabase.from('profiles').update(updates).eq('user_id', user!.id);
       if (error) throw error;
