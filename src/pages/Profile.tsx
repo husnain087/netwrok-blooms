@@ -16,7 +16,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import {
   Camera, Pencil, Plus, MapPin, Globe, Briefcase, GraduationCap,
   Eye, BarChart3, Search, Users, MessageSquare, ChevronRight, Shield, Star, Trash2,
-  ChevronUp, ChevronDown, Send, Bookmark, Activity, Info, FileText, Award, FolderOpen, BookOpen, Heart
+  ChevronUp, ChevronDown, Send, Bookmark, Activity, Info, FileText, Award, FolderOpen, BookOpen, Heart,
+  BadgeCheck, Mail
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PostCard from '@/components/PostCard';
