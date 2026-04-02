@@ -307,6 +307,20 @@ const Admin = () => {
                               </Button>
                             </>
                           )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Assign Role">
+                                <UserCog className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {['moderator', 'content_manager', 'support_agent', 'analyst', 'recruiter'].map(role => (
+                                <DropdownMenuItem key={role} onClick={() => assignRole(p.user_id, role)}>
+                                  Assign {role.replace('_', ' ')}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete Account"
                             onClick={() => setUserAction({ type: 'delete', userId: p.user_id, userName: p.full_name || 'this user' })}>
                             <Trash2 className="h-4 w-4" />
