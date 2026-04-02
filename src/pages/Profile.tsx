@@ -140,7 +140,7 @@ const Profile = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
-
+  const updateProfile = useMutation({
     mutationFn: async (updates: any) => {
       const { error } = await supabase.from('profiles').update(updates).eq('user_id', user!.id);
       if (error) throw error;
