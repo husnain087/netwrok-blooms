@@ -599,6 +599,20 @@ const Profile = () => {
         </Card>
       </aside>
     </div>
+
+    {cropImageSrc && (
+      <AvatarCropper
+        open={cropperOpen}
+        onClose={() => { setCropperOpen(false); setCropImageSrc(null); }}
+        imageSrc={cropImageSrc}
+        onCropComplete={async (blob) => {
+          setCropperOpen(false);
+          setCropImageSrc(null);
+          const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+          await handleImageUpload('avatars', 'avatar_url', file);
+        }}
+      />
+    )}
   );
 };
 
