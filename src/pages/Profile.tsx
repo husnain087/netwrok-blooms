@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner';
 import PostCard from '@/components/PostCard';
 import CreatePost from '@/components/CreatePost';
+import AvatarCropper from '@/components/AvatarCropper';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -32,6 +33,8 @@ const Profile = () => {
   const avatarRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ full_name: '', headline: '', summary: '', location: '', website: '', industry: '' });
@@ -208,6 +211,7 @@ const Profile = () => {
   if (!profile) return <div className="text-center py-8 text-muted-foreground">Profile not found</div>;
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 max-w-5xl mx-auto">
       <div className="lg:col-span-8 space-y-2">
         {/* Header Card */}
@@ -229,13 +233,20 @@ const Profile = () => {
             <div className="flex justify-between items-start">
               <div className="relative">
                 <Avatar className="h-36 w-36 border-4 border-card shadow-md">
-                  <AvatarImage src={profile.avatar_url || ''} />
+                  <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
                   <AvatarFallback className="text-4xl">{profile.full_name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 {isOwn && (
                   <>
                     <input type="file" ref={avatarRef} className="hidden" accept="image/*"
-                      onChange={e => e.target.files?.[0] && handleImageUpload('avatars', 'avatar_url', e.target.files[0])} />
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setCropImageSrc(URL.createObjectURL(file));
+                          setCropperOpen(true);
+                        }
+                        e.target.value = '';
+                      }} />
                     <Button size="icon" variant="secondary" className="absolute bottom-2 right-2 h-8 w-8 rounded-full shadow"
                       onClick={() => avatarRef.current?.click()}>
                       <Camera className="h-4 w-4" />
@@ -589,6 +600,21 @@ const Profile = () => {
         </Card>
       </aside>
     </div>
+
+    {cropImageSrc && (
+      <AvatarCropper
+        open={cropperOpen}
+        onClose={() => { setCropperOpen(false); setCropImageSrc(null); }}
+        imageSrc={cropImageSrc}
+        onCropComplete={async (blob) => {
+          setCropperOpen(false);
+          setCropImageSrc(null);
+          const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+          await handleImageUpload('avatars', 'avatar_url', file);
+        }}
+      />
+    )}
+    </>
   );
 };
 
