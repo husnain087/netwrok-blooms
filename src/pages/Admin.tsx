@@ -541,6 +541,40 @@ const Admin = () => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Direct Message Dialog */}
+      <Dialog open={!!messageTarget} onOpenChange={() => { setMessageTarget(null); setDirectMessage(''); }}>
+        <DialogContent className="sm:max-w-md rounded-xl">
+          {messageTarget && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  Send Message to {messageTarget.userName}
+                </DialogTitle>
+                <DialogDescription>
+                  Send a direct message to this user's inbox.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <Input
+                  placeholder="Type your message..."
+                  value={directMessage}
+                  onChange={e => setDirectMessage(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendDirectMessage()}
+                  className="rounded-xl"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" className="rounded-xl" onClick={() => { setMessageTarget(null); setDirectMessage(''); }}>Cancel</Button>
+                  <Button className="rounded-xl" onClick={sendDirectMessage} disabled={!directMessage.trim()}>
+                    <Send className="h-4 w-4 mr-1" /> Send
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
