@@ -17,6 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Navigate } from 'react-router-dom';
 
 type UserAction = { type: 'ban' | 'suspend' | 'delete'; userId: string; userName: string } | null;
+type MessageTarget = { userId: string; userName: string } | null;
 
 const Admin = () => {
   const { user } = useAuth();
