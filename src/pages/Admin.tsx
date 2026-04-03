@@ -25,6 +25,8 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [userAction, setUserAction] = useState<UserAction>(null);
   const [adminMessage, setAdminMessage] = useState('');
+  const [messageTarget, setMessageTarget] = useState<MessageTarget>(null);
+  const [directMessage, setDirectMessage] = useState('');
 
   const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
     queryKey: ['is-admin', user?.id],
