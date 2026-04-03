@@ -211,6 +211,7 @@ const Profile = () => {
   if (!profile) return <div className="text-center py-8 text-muted-foreground">Profile not found</div>;
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 max-w-5xl mx-auto">
       <div className="lg:col-span-8 space-y-2">
         {/* Header Card */}
