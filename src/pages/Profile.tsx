@@ -232,7 +232,7 @@ const Profile = () => {
             <div className="flex justify-between items-start">
               <div className="relative">
                 <Avatar className="h-36 w-36 border-4 border-card shadow-md">
-                  <AvatarImage src={profile.avatar_url || ''} />
+                  <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
                   <AvatarFallback className="text-4xl">{profile.full_name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 {isOwn && (
