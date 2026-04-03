@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner';
 import PostCard from '@/components/PostCard';
 import CreatePost from '@/components/CreatePost';
+import AvatarCropper from '@/components/AvatarCropper';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
