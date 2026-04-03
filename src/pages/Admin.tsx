@@ -343,9 +343,9 @@ const Admin = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {['moderator', 'content_manager', 'support_agent', 'analyst', 'recruiter'].map(role => (
+                              {['moderator', 'content_manager', 'support_agent', 'analyst', 'recruiter', 'bloom_member'].map(role => (
                                 <DropdownMenuItem key={role} onClick={() => assignRole(p.user_id, role)}>
-                                  Assign {role.replace('_', ' ')}
+                                  Assign {role.replace(/_/g, ' ')}
                                 </DropdownMenuItem>
                               ))}
                             </DropdownMenuContent>
