@@ -238,7 +238,14 @@ const Profile = () => {
                 {isOwn && (
                   <>
                     <input type="file" ref={avatarRef} className="hidden" accept="image/*"
-                      onChange={e => e.target.files?.[0] && handleImageUpload('avatars', 'avatar_url', e.target.files[0])} />
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setCropImageSrc(URL.createObjectURL(file));
+                          setCropperOpen(true);
+                        }
+                        e.target.value = '';
+                      }} />
                     <Button size="icon" variant="secondary" className="absolute bottom-2 right-2 h-8 w-8 rounded-full shadow"
                       onClick={() => avatarRef.current?.click()}>
                       <Camera className="h-4 w-4" />
