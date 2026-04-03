@@ -316,6 +316,10 @@ const Admin = () => {
                     <TableCell className="text-right">
                       {p.user_id !== user?.id && (
                         <div className="flex items-center gap-1 justify-end">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Send Message"
+                            onClick={() => setMessageTarget({ userId: p.user_id, userName: p.full_name || 'this user' })}>
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
                           {p.is_banned ? (
                             <Button variant="ghost" size="sm" className="h-8 text-xs text-green-600 hover:text-green-700" onClick={() => unbanUser(p.user_id)}>
                               <PlayCircle className="h-4 w-4 mr-1" /> Unban
