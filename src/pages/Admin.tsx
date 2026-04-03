@@ -11,12 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp, BadgeCheck, Mail, CheckCircle, XCircle, UserCog } from 'lucide-react';
+import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp, BadgeCheck, Mail, CheckCircle, XCircle, UserCog, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Navigate } from 'react-router-dom';
 
 type UserAction = { type: 'ban' | 'suspend' | 'delete'; userId: string; userName: string } | null;
+type MessageTarget = { userId: string; userName: string } | null;
 
 const Admin = () => {
   const { user } = useAuth();
@@ -24,6 +25,8 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [userAction, setUserAction] = useState<UserAction>(null);
   const [adminMessage, setAdminMessage] = useState('');
+  const [messageTarget, setMessageTarget] = useState<MessageTarget>(null);
+  const [directMessage, setDirectMessage] = useState('');
 
   const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
     queryKey: ['is-admin', user?.id],
@@ -189,6 +192,27 @@ const Admin = () => {
     }
   };
 
+  const sendDirectMessage = async () => {
+    if (!messageTarget || !directMessage.trim() || !user) return;
+    try {
+      await supabase.from('messages').insert({
+        sender_id: user.id,
+        receiver_id: messageTarget.userId,
+        content: directMessage,
+      });
+      await supabase.rpc('insert_unique_notification', {
+        p_user_id: messageTarget.userId,
+        p_actor_id: user.id,
+        p_type: 'message',
+      });
+      toast.success(`Message sent to ${messageTarget.userName}`);
+      setMessageTarget(null);
+      setDirectMessage('');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
 
   if (!isAdmin) return <Navigate to="/" replace />;
 
@@ -292,6 +316,10 @@ const Admin = () => {
                     <TableCell className="text-right">
                       {p.user_id !== user?.id && (
                         <div className="flex items-center gap-1 justify-end">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Send Message"
+                            onClick={() => setMessageTarget({ userId: p.user_id, userName: p.full_name || 'this user' })}>
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
                           {p.is_banned ? (
                             <Button variant="ghost" size="sm" className="h-8 text-xs text-green-600 hover:text-green-700" onClick={() => unbanUser(p.user_id)}>
                               <PlayCircle className="h-4 w-4 mr-1" /> Unban
@@ -315,9 +343,9 @@ const Admin = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {['moderator', 'content_manager', 'support_agent', 'analyst', 'recruiter'].map(role => (
+                              {['moderator', 'content_manager', 'support_agent', 'analyst', 'recruiter', 'bloom_member'].map(role => (
                                 <DropdownMenuItem key={role} onClick={() => assignRole(p.user_id, role)}>
-                                  Assign {role.replace('_', ' ')}
+                                  Assign {role.replace(/_/g, ' ')}
                                 </DropdownMenuItem>
                               ))}
                             </DropdownMenuContent>
@@ -511,6 +539,40 @@ const Admin = () => {
               </>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Direct Message Dialog */}
+      <Dialog open={!!messageTarget} onOpenChange={() => { setMessageTarget(null); setDirectMessage(''); }}>
+        <DialogContent className="sm:max-w-md rounded-xl">
+          {messageTarget && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  Send Message to {messageTarget.userName}
+                </DialogTitle>
+                <DialogDescription>
+                  Send a direct message to this user's inbox.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <Input
+                  placeholder="Type your message..."
+                  value={directMessage}
+                  onChange={e => setDirectMessage(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendDirectMessage()}
+                  className="rounded-xl"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" className="rounded-xl" onClick={() => { setMessageTarget(null); setDirectMessage(''); }}>Cancel</Button>
+                  <Button className="rounded-xl" onClick={sendDirectMessage} disabled={!directMessage.trim()}>
+                    <Send className="h-4 w-4 mr-1" /> Send
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

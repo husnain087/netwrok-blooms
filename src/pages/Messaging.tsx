@@ -17,6 +17,19 @@ const Messaging = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Check if user is admin or bloom_member
+  const { data: isPrivileged = false } = useQuery({
+    queryKey: ['is-privileged', user?.id],
+    queryFn: async () => {
+      const [{ data: isAdmin }, { data: isBloom }] = await Promise.all([
+        supabase.rpc('has_role', { _user_id: user!.id, _role: 'admin' as any }),
+        supabase.rpc('has_role', { _user_id: user!.id, _role: 'bloom_member' as any }),
+      ]);
+      return isAdmin || isBloom;
+    },
+    enabled: !!user,
+  });
+
   // Get connected users
   const { data: connections = [] } = useQuery({
     queryKey: ['connections', user?.id],
@@ -31,9 +44,21 @@ const Messaging = () => {
     enabled: !!user,
   });
 
-  const connectedUserIds = connections.map((c: any) =>
-    c.requester_id === user?.id ? c.receiver_id : c.requester_id
-  );
+  // Get all profiles for privileged users
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['all-profiles-messaging'],
+    queryFn: async () => {
+      const { data } = await supabase.from('profiles').select('user_id').neq('user_id', user!.id);
+      return data || [];
+    },
+    enabled: !!user && isPrivileged,
+  });
+
+  const connectedUserIds = isPrivileged
+    ? allProfiles.map((p: any) => p.user_id)
+    : connections.map((c: any) =>
+        c.requester_id === user?.id ? c.receiver_id : c.requester_id
+      );
 
   // Fetch initial messages when user is selected
   useEffect(() => {
