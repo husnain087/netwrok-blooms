@@ -192,6 +192,27 @@ const Admin = () => {
     }
   };
 
+  const sendDirectMessage = async () => {
+    if (!messageTarget || !directMessage.trim() || !user) return;
+    try {
+      await supabase.from('messages').insert({
+        sender_id: user.id,
+        receiver_id: messageTarget.userId,
+        content: directMessage,
+      });
+      await supabase.rpc('insert_unique_notification', {
+        p_user_id: messageTarget.userId,
+        p_actor_id: user.id,
+        p_type: 'message',
+      });
+      toast.success(`Message sent to ${messageTarget.userName}`);
+      setMessageTarget(null);
+      setDirectMessage('');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
 
   if (!isAdmin) return <Navigate to="/" replace />;
 
