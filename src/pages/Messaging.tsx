@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -60,6 +60,53 @@ const Messaging = () => {
         c.requester_id === user?.id ? c.receiver_id : c.requester_id
       );
 
+  // Fetch last message timestamps for sorting
+  const { data: lastMessageMap = {} } = useQuery({
+    queryKey: ['last-msg-map', user?.id, connectedUserIds.join(',')],
+    queryFn: async () => {
+      if (connectedUserIds.length === 0) return {};
+      const map: Record<string, { time: string; unread: number }> = {};
+      // Fetch all messages involving current user to build the map
+      const { data: msgs } = await supabase
+        .from('messages')
+        .select('sender_id, receiver_id, created_at, is_read')
+        .or(`sender_id.eq.${user!.id},receiver_id.eq.${user!.id}`)
+        .order('created_at', { ascending: false });
+      
+      if (msgs) {
+        for (const msg of msgs) {
+          const otherId = msg.sender_id === user!.id ? msg.receiver_id : msg.sender_id;
+          if (!map[otherId]) {
+            map[otherId] = { time: msg.created_at, unread: 0 };
+          }
+          if (msg.sender_id !== user!.id && msg.receiver_id === user!.id && !msg.is_read) {
+            map[otherId].unread++;
+          }
+        }
+      }
+      return map;
+    },
+    enabled: !!user && connectedUserIds.length > 0,
+    refetchInterval: 15000,
+  });
+
+  // Sort: unread first, then by latest message time
+  const sortedUserIds = useMemo(() => {
+    return [...connectedUserIds].sort((a: string, b: string) => {
+      const aData = (lastMessageMap as any)[a];
+      const bData = (lastMessageMap as any)[b];
+      const aUnread = aData?.unread || 0;
+      const bUnread = bData?.unread || 0;
+      // Unread conversations first
+      if (aUnread > 0 && bUnread === 0) return -1;
+      if (bUnread > 0 && aUnread === 0) return 1;
+      // Then by latest message time
+      const aTime = aData?.time ? new Date(aData.time).getTime() : 0;
+      const bTime = bData?.time ? new Date(bData.time).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [connectedUserIds, lastMessageMap]);
+
   // Fetch initial messages when user is selected
   useEffect(() => {
     if (!selectedUser || !user) return;
@@ -71,7 +118,6 @@ const Messaging = () => {
         .order('created_at', { ascending: true });
       setMessages(data || []);
 
-      // Mark as read
       await supabase
         .from('messages')
         .update({ is_read: true })
@@ -79,9 +125,9 @@ const Messaging = () => {
         .eq('receiver_id', user.id)
         .eq('is_read', false);
 
-      // Invalidate unread counts after marking as read
       queryClient.invalidateQueries({ queryKey: ['unread-msg-count'] });
       queryClient.invalidateQueries({ queryKey: ['unread-msg-from', selectedUser] });
+      queryClient.invalidateQueries({ queryKey: ['last-msg-map'] });
     };
     fetchMessages();
   }, [selectedUser, user, queryClient]);
@@ -97,7 +143,6 @@ const Messaging = () => {
         table: 'messages',
       }, (payload) => {
         const msg = payload.new as any;
-        // Only add if relevant to current conversation
         if (
           (msg.sender_id === user.id && msg.receiver_id === selectedUser) ||
           (msg.sender_id === selectedUser && msg.receiver_id === user.id)
@@ -106,14 +151,14 @@ const Messaging = () => {
             if (prev.some(m => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
-          // Mark as read if from other user
           if (msg.sender_id === selectedUser) {
             supabase.from('messages').update({ is_read: true }).eq('id', msg.id);
           }
         }
-        // Invalidate unread counts for badge updates
         queryClient.invalidateQueries({ queryKey: ['unread-msg-count'] });
         queryClient.invalidateQueries({ queryKey: ['unread-msg-from'] });
+        queryClient.invalidateQueries({ queryKey: ['last-msg-map'] });
+        queryClient.invalidateQueries({ queryKey: ['last-msg'] });
       })
       .subscribe();
 
@@ -133,7 +178,6 @@ const Messaging = () => {
       receiver_id: selectedUser,
       content,
     });
-    // Use unique notification
     await supabase.rpc('insert_unique_notification', {
       p_user_id: selectedUser,
       p_actor_id: user.id,
@@ -146,11 +190,11 @@ const Messaging = () => {
   return (
     <div className="max-w-4xl mx-auto px-0 sm:px-4">
       <Card className="h-[calc(100vh-8rem)] flex overflow-hidden">
-        {/* Sidebar - hidden on mobile when chat is open */}
+        {/* Sidebar */}
         <div className={`${selectedUser ? 'hidden md:flex' : 'flex'} w-full md:w-72 border-r flex-col`}>
           <div className="p-3 border-b font-semibold text-lg">Messaging</div>
           <div className="flex-1 overflow-y-auto">
-            {connectedUserIds.map((uid: string) => (
+            {sortedUserIds.map((uid: string) => (
               <ConversationItem
                 key={uid}
                 userId={uid}
@@ -158,13 +202,13 @@ const Messaging = () => {
                 onClick={() => setSelectedUser(uid)}
               />
             ))}
-            {connectedUserIds.length === 0 && (
+            {sortedUserIds.length === 0 && (
               <p className="p-4 text-sm text-muted-foreground">Connect with people to start messaging.</p>
             )}
           </div>
         </div>
 
-        {/* Chat area - full width on mobile */}
+        {/* Chat area */}
         <div className={`${selectedUser ? 'flex' : 'hidden md:flex'} flex-1 flex-col`}>
           {selectedUser ? (
             <>
@@ -239,7 +283,6 @@ const ConversationItem: React.FC<{ userId: string; isSelected: boolean; onClick:
     refetchInterval: 15000,
   });
 
-  // Get last message preview
   const { data: lastMessage } = useQuery({
     queryKey: ['last-msg', userId, user?.id],
     queryFn: async () => {
