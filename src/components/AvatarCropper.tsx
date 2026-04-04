@@ -21,33 +21,56 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
     image.src = url;
   });
 
+const OUTPUT_SIZE = 400; // Fixed output resolution
+
 async function getCroppedImg(imageSrc: string, pixelCrop: Area, rotation = 0): Promise<Blob> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d')!;
 
-  const size = Math.max(image.width, image.height);
-  canvas.width = size;
-  canvas.height = size;
+  const maxSide = Math.max(image.width, image.height);
+  const safeArea = 2 * maxSide;
 
-  ctx.translate(size / 2, size / 2);
+  canvas.width = safeArea;
+  canvas.height = safeArea;
+
+  // Translate to center, rotate, translate back
+  ctx.translate(safeArea / 2, safeArea / 2);
   ctx.rotate((rotation * Math.PI) / 180);
-  ctx.translate(-size / 2, -size / 2);
-  ctx.drawImage(image, (size - image.width) / 2, (size - image.height) / 2);
+  ctx.translate(-safeArea / 2, -safeArea / 2);
 
+  // Draw the image centered in the safe area
+  ctx.drawImage(
+    image,
+    (safeArea - image.width) / 2,
+    (safeArea - image.height) / 2
+  );
+
+  // Now extract the cropped area and scale to OUTPUT_SIZE
   const croppedCanvas = document.createElement('canvas');
   const croppedCtx = croppedCanvas.getContext('2d')!;
-  croppedCanvas.width = pixelCrop.width;
-  croppedCanvas.height = pixelCrop.height;
+  croppedCanvas.width = OUTPUT_SIZE;
+  croppedCanvas.height = OUTPUT_SIZE;
+
+  // The pixelCrop coordinates are relative to the displayed image, 
+  // but we need to offset them by the safe area padding
+  const offsetX = (safeArea - image.width) / 2;
+  const offsetY = (safeArea - image.height) / 2;
 
   croppedCtx.drawImage(
     canvas,
-    pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
-    0, 0, pixelCrop.width, pixelCrop.height
+    pixelCrop.x + offsetX,
+    pixelCrop.y + offsetY,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    OUTPUT_SIZE,
+    OUTPUT_SIZE
   );
 
   return new Promise((resolve) => {
-    croppedCanvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.9);
+    croppedCanvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.92);
   });
 }
 
