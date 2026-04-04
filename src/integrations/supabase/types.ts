@@ -380,6 +380,41 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          plan_type: string
+          promo_code_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          plan_type?: string
+          promo_code_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          plan_type?: string
+          promo_code_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_subscriptions_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           admin_message: string | null
@@ -437,6 +472,36 @@ export type Database = {
           verification_status?: string | null
           website?: string | null
           work_email?: string | null
+        }
+        Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          current_uses: number
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          plan_type: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_uses?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          plan_type?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_uses?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          plan_type?: string
         }
         Relationships: []
       }
@@ -562,6 +627,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      redeem_promo_code: { Args: { p_code: string }; Returns: Json }
     }
     Enums: {
       app_role:
