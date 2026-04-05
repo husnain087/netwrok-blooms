@@ -7,6 +7,7 @@ import CreatePost from '@/components/CreatePost';
 import PostCard from '@/components/PostCard';
 import ProfileSidebar from '@/components/ProfileSidebar';
 import SuggestedConnections from '@/components/SuggestedConnections';
+import StoriesBar from '@/components/StoriesBar';
 import { Button } from '@/components/ui/button';
 import { Megaphone } from 'lucide-react';
 
@@ -97,6 +98,7 @@ const Feed = () => {
 
       {/* Main Feed */}
       <div className="lg:col-span-6 space-y-4">
+        <StoriesBar />
         <CreatePost />
 
         {/* Run Ads Button */}
