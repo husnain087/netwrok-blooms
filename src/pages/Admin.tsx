@@ -221,7 +221,7 @@ const Admin = () => {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   const filteredProfiles = profiles.filter((p: any) =>
-    !searchQuery || p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.headline?.toLowerCase().includes(searchQuery.toLowerCase())
+    !searchQuery || p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.headline?.toLowerCase().includes(searchQuery.toLowerCase()) || p.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const activeUsers = profiles.filter((p: any) => !p.is_banned).length;
