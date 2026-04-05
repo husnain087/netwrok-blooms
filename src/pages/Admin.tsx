@@ -307,7 +307,8 @@ const Admin = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground max-w-[200px] truncate">{p.headline || '-'}</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{p.email}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground max-w-[200px] truncate">{p.headline || '-'}</TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}
                     </TableCell>
