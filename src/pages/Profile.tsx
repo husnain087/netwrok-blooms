@@ -271,6 +271,11 @@ const Profile = () => {
                       onClick={() => avatarRef.current?.click()}>
                       <Camera className="h-4 w-4" />
                     </Button>
+                    <input type="file" ref={storyRef} className="hidden" accept="image/*" onChange={handleStoryUpload} />
+                    <Button size="icon" className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full shadow bg-primary hover:bg-primary/90 text-primary-foreground"
+                      onClick={() => storyRef.current?.click()} disabled={uploadingStory}>
+                      {uploadingStory ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                    </Button>
                   </>
                 )}
               </div>
