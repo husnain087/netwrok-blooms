@@ -35,6 +35,8 @@ const Profile = () => {
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const storyRef = useRef<HTMLInputElement>(null);
+  const [uploadingStory, setUploadingStory] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ full_name: '', headline: '', summary: '', location: '', website: '', industry: '' });
