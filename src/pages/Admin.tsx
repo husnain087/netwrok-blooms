@@ -40,8 +40,12 @@ const Admin = () => {
   const { data: profiles = [] } = useQuery({
     queryKey: ['admin-profiles'],
     queryFn: async () => {
-      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      return data || [];
+      const [{ data: profileData }, { data: emailData }] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.rpc('get_user_emails') as any,
+      ]);
+      const emailMap = new Map((emailData || []).map((e: any) => [e.user_id, e.email]));
+      return (profileData || []).map((p: any) => ({ ...p, email: emailMap.get(p.user_id) || '-' }));
     },
     enabled: !!isAdmin,
   });
