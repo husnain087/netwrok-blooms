@@ -285,7 +285,8 @@ const Admin = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead className="hidden md:table-cell">Headline</TableHead>
+                  <TableHead className="hidden md:table-cell">Email</TableHead>
+                  <TableHead className="hidden lg:table-cell">Headline</TableHead>
                   <TableHead className="hidden md:table-cell">Joined</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
