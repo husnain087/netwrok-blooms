@@ -209,6 +209,24 @@ const Profile = () => {
     }
   };
 
+  const handleStoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image'); return; }
+    setUploadingStory(true);
+    try {
+      const url = await uploadFile('stories', user.id, file);
+      await supabase.from('stories').insert({ user_id: user.id, image_url: url });
+      queryClient.invalidateQueries({ queryKey: ['stories'] });
+      toast.success('Story uploaded!');
+    } catch (err: any) {
+      toast.error('Failed to upload story');
+    } finally {
+      setUploadingStory(false);
+      if (storyRef.current) storyRef.current.value = '';
+    }
+  };
+
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
   if (!profile) return <div className="text-center py-8 text-muted-foreground">Profile not found</div>;
 
