@@ -40,8 +40,12 @@ const Admin = () => {
   const { data: profiles = [] } = useQuery({
     queryKey: ['admin-profiles'],
     queryFn: async () => {
-      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      return data || [];
+      const [{ data: profileData }, { data: emailData }] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.rpc('get_user_emails') as any,
+      ]);
+      const emailMap = new Map((emailData || []).map((e: any) => [e.user_id, e.email]));
+      return (profileData || []).map((p: any) => ({ ...p, email: emailMap.get(p.user_id) || '-' }));
     },
     enabled: !!isAdmin,
   });
@@ -217,7 +221,7 @@ const Admin = () => {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   const filteredProfiles = profiles.filter((p: any) =>
-    !searchQuery || p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.headline?.toLowerCase().includes(searchQuery.toLowerCase())
+    !searchQuery || p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.headline?.toLowerCase().includes(searchQuery.toLowerCase()) || p.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const activeUsers = profiles.filter((p: any) => !p.is_banned).length;
@@ -281,7 +285,8 @@ const Admin = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead className="hidden md:table-cell">Headline</TableHead>
+                  <TableHead className="hidden md:table-cell">Email</TableHead>
+                  <TableHead className="hidden lg:table-cell">Headline</TableHead>
                   <TableHead className="hidden md:table-cell">Joined</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -302,7 +307,8 @@ const Admin = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground max-w-[200px] truncate">{p.headline || '-'}</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{p.email}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground max-w-[200px] truncate">{p.headline || '-'}</TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}
                     </TableCell>
