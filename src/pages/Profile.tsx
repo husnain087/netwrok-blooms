@@ -35,6 +35,8 @@ const Profile = () => {
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const storyRef = useRef<HTMLInputElement>(null);
+  const [uploadingStory, setUploadingStory] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ full_name: '', headline: '', summary: '', location: '', website: '', industry: '' });
@@ -207,6 +209,24 @@ const Profile = () => {
     }
   };
 
+  const handleStoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image'); return; }
+    setUploadingStory(true);
+    try {
+      const url = await uploadFile('stories', user.id, file);
+      await supabase.from('stories').insert({ user_id: user.id, image_url: url });
+      queryClient.invalidateQueries({ queryKey: ['stories'] });
+      toast.success('Story uploaded!');
+    } catch (err: any) {
+      toast.error('Failed to upload story');
+    } finally {
+      setUploadingStory(false);
+      if (storyRef.current) storyRef.current.value = '';
+    }
+  };
+
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
   if (!profile) return <div className="text-center py-8 text-muted-foreground">Profile not found</div>;
 
@@ -250,6 +270,11 @@ const Profile = () => {
                     <Button size="icon" variant="secondary" className="absolute bottom-2 right-2 h-8 w-8 rounded-full shadow"
                       onClick={() => avatarRef.current?.click()}>
                       <Camera className="h-4 w-4" />
+                    </Button>
+                    <input type="file" ref={storyRef} className="hidden" accept="image/*" onChange={handleStoryUpload} />
+                    <Button size="icon" className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full shadow bg-primary hover:bg-primary/90 text-primary-foreground"
+                      onClick={() => storyRef.current?.click()} disabled={uploadingStory}>
+                      {uploadingStory ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                     </Button>
                   </>
                 )}
