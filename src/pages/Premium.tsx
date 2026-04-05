@@ -119,7 +119,7 @@ const Premium = () => {
           </p>
           <div className="flex gap-2">
             <Input
-              placeholder="Enter your promo code"
+              placeholder="Enter promo code"
               value={promoCode}
               onChange={e => setPromoCode(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleRedeem()}
