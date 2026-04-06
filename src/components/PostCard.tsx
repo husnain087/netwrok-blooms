@@ -16,6 +16,18 @@ import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+// Render @mentions as bold/styled text
+const renderContentWithMentions = (content: string) => {
+  if (!content) return null;
+  const parts = content.split(/(@[\w\s]+?)(?=\s|$)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('@') && part.length > 1) {
+      return <span key={i} className="font-semibold text-primary cursor-pointer hover:underline">{part}</span>;
+    }
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+};
+
 interface PostCardProps {
   post: any;
   isRepost?: boolean;
@@ -248,7 +260,9 @@ const PostCard: React.FC<PostCardProps> = ({ post, isRepost, repostedBy }) => {
 
         {/* Content */}
         {post.article_title && <h3 className="text-lg font-bold mb-2">{post.article_title}</h3>}
-        <p className="text-sm whitespace-pre-wrap mb-3">{post.content}</p>
+        <p className="text-sm whitespace-pre-wrap mb-3">
+          {renderContentWithMentions(post.content)}
+        </p>
         {post.image_url && <img src={post.image_url} alt="" className="rounded-lg w-full max-h-96 object-cover mb-3" />}
         {post.video_url && (
           <video src={post.video_url} controls className="rounded-lg w-full max-h-96 mb-3" />
