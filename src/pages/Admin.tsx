@@ -80,6 +80,15 @@ const Admin = () => {
     enabled: !!isAdmin,
   });
 
+  const { data: communityMeetings = [] } = useQuery({
+    queryKey: ['admin-meetings'],
+    queryFn: async () => {
+      const { data } = await (supabase.from('community_meetings') as any).select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: !!isAdmin,
+  });
+
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
