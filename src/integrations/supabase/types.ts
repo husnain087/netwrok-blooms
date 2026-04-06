@@ -59,6 +59,39 @@ export type Database = {
           },
         ]
       }
+      community_meetings: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_live: boolean
+          meeting_url: string | null
+          scheduled_at: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_live?: boolean
+          meeting_url?: string | null
+          scheduled_at?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_live?: boolean
+          meeting_url?: string | null
+          scheduled_at?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       connections: {
         Row: {
           created_at: string
