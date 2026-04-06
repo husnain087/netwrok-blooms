@@ -341,11 +341,12 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users">
-        <TabsList className="grid w-full grid-cols-4 rounded-xl">
-          <TabsTrigger value="users" className="font-bold text-xs sm:text-sm">Users ({profiles.length})</TabsTrigger>
-          <TabsTrigger value="posts" className="font-bold text-xs sm:text-sm">Posts ({posts.length})</TabsTrigger>
-          <TabsTrigger value="jobs" className="font-bold text-xs sm:text-sm">Jobs ({jobs.length})</TabsTrigger>
-          <TabsTrigger value="verify" className="font-bold text-xs sm:text-sm">Verify ({verificationRequests.filter((r: any) => r.status === 'pending').length})</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 rounded-xl">
+          <TabsTrigger value="users" className="font-bold text-xs sm:text-sm">Users</TabsTrigger>
+          <TabsTrigger value="posts" className="font-bold text-xs sm:text-sm">Posts</TabsTrigger>
+          <TabsTrigger value="jobs" className="font-bold text-xs sm:text-sm">Jobs</TabsTrigger>
+          <TabsTrigger value="verify" className="font-bold text-xs sm:text-sm">Verify</TabsTrigger>
+          <TabsTrigger value="meetings" className="font-bold text-xs sm:text-sm">Meetings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
