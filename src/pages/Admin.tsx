@@ -573,6 +573,83 @@ const Admin = () => {
             </Table>
           </Card>
         </TabsContent>
+
+        <TabsContent value="meetings" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-lg flex items-center gap-2"><Video className="h-5 w-5 text-primary" /> Community Meetings</h3>
+            <Button className="rounded-xl" onClick={() => setShowMeetingForm(true)}>
+              <Calendar className="h-4 w-4 mr-1" /> Schedule Meeting
+            </Button>
+          </div>
+
+          {showMeetingForm && (
+            <Card className="rounded-xl p-4 space-y-3">
+              <Input placeholder="Meeting title *" value={meetingForm.title} onChange={e => setMeetingForm(f => ({ ...f, title: e.target.value }))} className="rounded-xl" />
+              <Input placeholder="Description (optional)" value={meetingForm.description} onChange={e => setMeetingForm(f => ({ ...f, description: e.target.value }))} className="rounded-xl" />
+              <Input type="datetime-local" value={meetingForm.scheduled_at} onChange={e => setMeetingForm(f => ({ ...f, scheduled_at: e.target.value }))} className="rounded-xl" />
+              <Input placeholder="Meeting URL (optional)" value={meetingForm.meeting_url} onChange={e => setMeetingForm(f => ({ ...f, meeting_url: e.target.value }))} className="rounded-xl" />
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" className="rounded-xl" onClick={() => setShowMeetingForm(false)}>Cancel</Button>
+                <Button className="rounded-xl" onClick={createMeeting} disabled={!meetingForm.title.trim()}>Create & Notify All</Button>
+              </div>
+            </Card>
+          )}
+
+          <Card className="rounded-xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Scheduled</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {communityMeetings.map((m: any) => (
+                  <TableRow key={m.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-bold text-sm">{m.title}</p>
+                        {m.description && <p className="text-xs text-muted-foreground">{m.description}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {m.scheduled_at ? new Date(m.scheduled_at).toLocaleString() : 'Not scheduled'}
+                    </TableCell>
+                    <TableCell>
+                      {m.is_live ? (
+                        <Badge className="bg-green-500/10 text-green-600 border-0 animate-pulse">🔴 LIVE</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">Scheduled</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center gap-1 justify-end">
+                        <Button
+                          variant={m.is_live ? 'destructive' : 'default'}
+                          size="sm"
+                          className="rounded-xl text-xs"
+                          onClick={() => toggleMeetingLive(m.id, m.is_live)}
+                        >
+                          {m.is_live ? 'End Meeting' : 'Go Live'}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMeeting(m.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {communityMeetings.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No meetings yet</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* User Action Dialog */}
