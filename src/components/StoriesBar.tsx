@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Plus, X, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
@@ -32,7 +32,6 @@ const StoriesBar = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
 
-  // Get connections
   const { data: connections = [] } = useQuery({
     queryKey: ['connections-list', user?.id],
     queryFn: async () => {
@@ -54,7 +53,6 @@ const StoriesBar = () => {
     return ids;
   }, [connections, user?.id]);
 
-  // Get active stories (not expired)
   const { data: stories = [] } = useQuery({
     queryKey: ['stories', connectedIds],
     queryFn: async () => {
@@ -71,23 +69,18 @@ const StoriesBar = () => {
     refetchInterval: 60000,
   });
 
-  // Get profiles for story users
   const storyUserIds = React.useMemo(() => [...new Set(stories.map(s => s.user_id))], [stories]);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ['story-profiles', storyUserIds],
     queryFn: async () => {
       if (storyUserIds.length === 0) return [];
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('user_id', storyUserIds);
+      const { data } = await supabase.from('profiles').select('*').in('user_id', storyUserIds);
       return data || [];
     },
     enabled: storyUserIds.length > 0,
   });
 
-  // Group stories by user
   const storyGroups = React.useMemo((): StoryGroup[] => {
     const groups: StoryGroup[] = [];
     const userMap = new Map<string, Story[]>();
@@ -96,7 +89,6 @@ const StoriesBar = () => {
       userMap.get(s.user_id)!.push(s);
     });
 
-    // Own stories first
     if (user && userMap.has(user.id)) {
       const profile = profiles.find(p => p.user_id === user.id);
       groups.push({ user_id: user.id, profile, stories: userMap.get(user.id)! });
@@ -114,12 +106,10 @@ const StoriesBar = () => {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
-
     setUploading(true);
     try {
       const url = await uploadFile('stories', user.id, file);
@@ -134,6 +124,27 @@ const StoriesBar = () => {
     }
   };
 
+  const handleDeleteStory = async (storyId: string) => {
+    if (!user) return;
+    try {
+      await supabase.from('stories').delete().eq('id', storyId).eq('user_id', user.id);
+      queryClient.invalidateQueries({ queryKey: ['stories'] });
+      toast.success('Story deleted');
+      // If this was the last story in the group, close viewer
+      if (viewingGroup) {
+        const remaining = viewingGroup.stories.filter(s => s.id !== storyId);
+        if (remaining.length === 0) {
+          setViewingGroup(null);
+        } else {
+          setViewingGroup({ ...viewingGroup, stories: remaining });
+          setCurrentIndex(Math.min(currentIndex, remaining.length - 1));
+        }
+      }
+    } catch {
+      toast.error('Failed to delete story');
+    }
+  };
+
   const openViewer = (group: StoryGroup) => {
     setViewingGroup(group);
     setCurrentIndex(0);
@@ -144,7 +155,6 @@ const StoriesBar = () => {
     if (currentIndex < viewingGroup.stories.length - 1) {
       setCurrentIndex(i => i + 1);
     } else {
-      // Move to next group
       const idx = storyGroups.findIndex(g => g.user_id === viewingGroup.user_id);
       if (idx < storyGroups.length - 1) {
         setViewingGroup(storyGroups[idx + 1]);
@@ -161,14 +171,11 @@ const StoriesBar = () => {
     }
   };
 
-  const hasOwnStory = storyGroups.some(g => g.user_id === user?.id);
-
   return (
     <>
       <div className="bg-card border rounded-2xl p-3 shadow-sm">
         <ScrollArea className="w-full">
           <div className="flex gap-3 items-center pb-1">
-            {/* Add Story Button */}
             <div className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => fileRef.current?.click()}>
               <div className="relative">
                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-primary/50 hover:border-primary transition-colors">
@@ -182,7 +189,6 @@ const StoriesBar = () => {
               <span className="text-[10px] text-muted-foreground font-medium">Your Story</span>
             </div>
 
-            {/* Story circles */}
             {storyGroups.map(group => (
               <div
                 key={group.user_id}
@@ -206,13 +212,7 @@ const StoriesBar = () => {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleUpload}
-        />
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
       </div>
 
       {/* Story Viewer Dialog */}
@@ -241,24 +241,35 @@ const StoriesBar = () => {
                 <span className="text-white/60 text-xs">
                   {new Date(viewingGroup.stories[currentIndex].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-auto text-white hover:bg-white/20 h-8 w-8"
-                  onClick={() => setViewingGroup(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="ml-auto flex items-center gap-1">
+                  {/* Delete button - only for own stories */}
+                  {viewingGroup.user_id === user?.id && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-white hover:bg-white/20 h-8 w-8"
+                      onClick={() => handleDeleteStory(viewingGroup.stories[currentIndex].id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white hover:bg-white/20 h-8 w-8"
+                    onClick={() => setViewingGroup(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
-              {/* Story Image */}
               <img
                 src={viewingGroup.stories[currentIndex].image_url}
                 alt="Story"
                 className="w-full h-full object-contain bg-black"
               />
 
-              {/* Nav areas */}
               <div className="absolute inset-0 z-10 flex">
                 <div className="w-1/3 h-full cursor-pointer" onClick={prevStory} />
                 <div className="w-1/3 h-full" />
