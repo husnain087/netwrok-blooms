@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Image, FileText, X, Smile, CalendarDays, Gift, MoreHorizontal, Clock, Video } from 'lucide-react';
+import MentionInput from '@/components/MentionInput';
 import { toast } from 'sonner';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 
@@ -161,10 +162,10 @@ const CreatePost: React.FC<{ trigger?: React.ReactNode }> = ({ trigger }) => {
                 className="border-0 px-0 text-lg font-semibold focus-visible:ring-0 mb-2"
               />
             )}
-            <Textarea
-              placeholder="What do you want to talk about?"
+            <MentionInput
+              placeholder="What do you want to talk about? Use @ to mention someone"
               value={content}
-              onChange={e => setContent(e.target.value)}
+              onChange={setContent}
               className="min-h-[200px] resize-none border-0 p-0 focus-visible:ring-0 text-base"
               autoFocus
             />
