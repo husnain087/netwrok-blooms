@@ -98,6 +98,8 @@ const Notifications = () => {
       case 'message': return <MessageCircle className="h-4 w-4 text-primary" />;
       case 'repost': return <Repeat2 className="h-4 w-4 text-primary" />;
       case 'job_application': return <Briefcase className="h-4 w-4 text-primary" />;
+      case 'mention': return <UserPlus className="h-4 w-4 text-primary" />;
+      case 'community_meeting': case 'community_meeting_live': return <Bell className="h-4 w-4 text-primary" />;
       default: return <Bell className="h-4 w-4" />;
     }
   };
@@ -112,6 +114,9 @@ const Notifications = () => {
       case 'message': return 'sent you a message';
       case 'repost': return 'reposted your post';
       case 'job_application': return 'applied to your job posting';
+      case 'mention': return 'mentioned you in a post';
+      case 'community_meeting': return 'scheduled a community meeting';
+      case 'community_meeting_live': return 'started a community meeting — join now!';
       default: return 'interacted with you';
     }
   };

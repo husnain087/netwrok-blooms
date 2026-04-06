@@ -11,13 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp, BadgeCheck, Mail, CheckCircle, XCircle, UserCog, Send } from 'lucide-react';
+import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp, BadgeCheck, Mail, CheckCircle, XCircle, UserCog, Send, Video, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Navigate } from 'react-router-dom';
 
 type UserAction = { type: 'ban' | 'suspend' | 'delete'; userId: string; userName: string } | null;
 type MessageTarget = { userId: string; userName: string } | null;
+type MeetingForm = { title: string; description: string; scheduled_at: string; meeting_url: string };
 
 const Admin = () => {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ const Admin = () => {
   const [adminMessage, setAdminMessage] = useState('');
   const [messageTarget, setMessageTarget] = useState<MessageTarget>(null);
   const [directMessage, setDirectMessage] = useState('');
+  const [meetingForm, setMeetingForm] = useState<MeetingForm>({ title: '', description: '', scheduled_at: '', meeting_url: '' });
+  const [showMeetingForm, setShowMeetingForm] = useState(false);
 
   const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
     queryKey: ['is-admin', user?.id],
@@ -72,6 +75,15 @@ const Admin = () => {
     queryKey: ['admin-verifications'],
     queryFn: async () => {
       const { data } = await (supabase.from('verification_requests') as any).select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: !!isAdmin,
+  });
+
+  const { data: communityMeetings = [] } = useQuery({
+    queryKey: ['admin-meetings'],
+    queryFn: async () => {
+      const { data } = await (supabase.from('community_meetings') as any).select('*').order('created_at', { ascending: false });
       return data || [];
     },
     enabled: !!isAdmin,
@@ -217,8 +229,69 @@ const Admin = () => {
     }
   };
 
+  const createMeeting = async () => {
+    if (!meetingForm.title.trim() || !user) return;
+    try {
+      await (supabase.from('community_meetings') as any).insert({
+        title: meetingForm.title,
+        description: meetingForm.description || null,
+        scheduled_at: meetingForm.scheduled_at || null,
+        meeting_url: meetingForm.meeting_url || null,
+        created_by: user.id,
+      });
+      const { data: allProfiles } = await supabase.from('profiles').select('user_id');
+      if (allProfiles) {
+        for (const p of allProfiles) {
+          if (p.user_id !== user.id) {
+            await supabase.from('notifications').insert({
+              user_id: p.user_id, actor_id: user.id, type: 'community_meeting',
+            });
+          }
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+      queryClient.invalidateQueries({ queryKey: ['community-meetings'] });
+      setMeetingForm({ title: '', description: '', scheduled_at: '', meeting_url: '' });
+      setShowMeetingForm(false);
+      toast.success('Meeting created & all users notified!');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
-  if (!isAdmin) return <Navigate to="/" replace />;
+  const toggleMeetingLive = async (meetingId: string, isLive: boolean) => {
+    try {
+      await (supabase.from('community_meetings') as any).update({ is_live: !isLive }).eq('id', meetingId);
+      if (!isLive) {
+        const { data: allProfiles } = await supabase.from('profiles').select('user_id');
+        if (allProfiles) {
+          for (const p of allProfiles) {
+            if (p.user_id !== user!.id) {
+              await supabase.from('notifications').insert({
+                user_id: p.user_id, actor_id: user!.id, type: 'community_meeting_live',
+              });
+            }
+          }
+        }
+        toast.success('Meeting is LIVE! All users notified.');
+      } else {
+        toast.success('Meeting ended.');
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+      queryClient.invalidateQueries({ queryKey: ['community-meetings'] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const deleteMeeting = async (meetingId: string) => {
+    await (supabase.from('community_meetings') as any).delete().eq('id', meetingId);
+    queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+    queryClient.invalidateQueries({ queryKey: ['community-meetings'] });
+    toast.success('Meeting deleted');
+  };
+
+
 
   const filteredProfiles = profiles.filter((p: any) =>
     !searchQuery || p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.headline?.toLowerCase().includes(searchQuery.toLowerCase()) || p.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -268,11 +341,12 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users">
-        <TabsList className="grid w-full grid-cols-4 rounded-xl">
-          <TabsTrigger value="users" className="font-bold text-xs sm:text-sm">Users ({profiles.length})</TabsTrigger>
-          <TabsTrigger value="posts" className="font-bold text-xs sm:text-sm">Posts ({posts.length})</TabsTrigger>
-          <TabsTrigger value="jobs" className="font-bold text-xs sm:text-sm">Jobs ({jobs.length})</TabsTrigger>
-          <TabsTrigger value="verify" className="font-bold text-xs sm:text-sm">Verify ({verificationRequests.filter((r: any) => r.status === 'pending').length})</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 rounded-xl">
+          <TabsTrigger value="users" className="font-bold text-xs sm:text-sm">Users</TabsTrigger>
+          <TabsTrigger value="posts" className="font-bold text-xs sm:text-sm">Posts</TabsTrigger>
+          <TabsTrigger value="jobs" className="font-bold text-xs sm:text-sm">Jobs</TabsTrigger>
+          <TabsTrigger value="verify" className="font-bold text-xs sm:text-sm">Verify</TabsTrigger>
+          <TabsTrigger value="meetings" className="font-bold text-xs sm:text-sm">Meetings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
@@ -493,6 +567,83 @@ const Admin = () => {
                 {verificationRequests.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No verification requests</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="meetings" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-lg flex items-center gap-2"><Video className="h-5 w-5 text-primary" /> Community Meetings</h3>
+            <Button className="rounded-xl" onClick={() => setShowMeetingForm(true)}>
+              <Calendar className="h-4 w-4 mr-1" /> Schedule Meeting
+            </Button>
+          </div>
+
+          {showMeetingForm && (
+            <Card className="rounded-xl p-4 space-y-3">
+              <Input placeholder="Meeting title *" value={meetingForm.title} onChange={e => setMeetingForm(f => ({ ...f, title: e.target.value }))} className="rounded-xl" />
+              <Input placeholder="Description (optional)" value={meetingForm.description} onChange={e => setMeetingForm(f => ({ ...f, description: e.target.value }))} className="rounded-xl" />
+              <Input type="datetime-local" value={meetingForm.scheduled_at} onChange={e => setMeetingForm(f => ({ ...f, scheduled_at: e.target.value }))} className="rounded-xl" />
+              <Input placeholder="Meeting URL (optional)" value={meetingForm.meeting_url} onChange={e => setMeetingForm(f => ({ ...f, meeting_url: e.target.value }))} className="rounded-xl" />
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" className="rounded-xl" onClick={() => setShowMeetingForm(false)}>Cancel</Button>
+                <Button className="rounded-xl" onClick={createMeeting} disabled={!meetingForm.title.trim()}>Create & Notify All</Button>
+              </div>
+            </Card>
+          )}
+
+          <Card className="rounded-xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Scheduled</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {communityMeetings.map((m: any) => (
+                  <TableRow key={m.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-bold text-sm">{m.title}</p>
+                        {m.description && <p className="text-xs text-muted-foreground">{m.description}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {m.scheduled_at ? new Date(m.scheduled_at).toLocaleString() : 'Not scheduled'}
+                    </TableCell>
+                    <TableCell>
+                      {m.is_live ? (
+                        <Badge className="bg-green-500/10 text-green-600 border-0 animate-pulse">🔴 LIVE</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">Scheduled</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center gap-1 justify-end">
+                        <Button
+                          variant={m.is_live ? 'destructive' : 'default'}
+                          size="sm"
+                          className="rounded-xl text-xs"
+                          onClick={() => toggleMeetingLive(m.id, m.is_live)}
+                        >
+                          {m.is_live ? 'End Meeting' : 'Go Live'}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMeeting(m.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {communityMeetings.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No meetings yet</TableCell>
                   </TableRow>
                 )}
               </TableBody>

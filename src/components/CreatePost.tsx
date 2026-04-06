@@ -73,15 +73,42 @@ const CreatePost: React.FC<{ trigger?: React.ReactNode }> = ({ trigger }) => {
       if (videoFile) {
         videoUrl = await uploadFile('post-videos', user.id, videoFile);
       }
-      const { error } = await supabase.from('posts').insert({
+      const { data: newPost, error } = await supabase.from('posts').insert({
         user_id: user.id,
         content,
         image_url: imageUrl,
         video_url: videoUrl,
         post_type: isArticle ? 'article' : 'post',
         article_title: isArticle ? articleTitle : null,
-      } as any);
+      } as any).select().single();
       if (error) throw error;
+
+      // Notify mentioned users
+      const mentionRegex = /@([\w\s]+?)(?=\s@|\s*$|[.!?,])/g;
+      const mentions: string[] = [];
+      let match;
+      while ((match = mentionRegex.exec(content)) !== null) {
+        mentions.push(match[1].trim());
+      }
+      if (mentions.length > 0) {
+        const { data: mentionedProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('full_name', mentions);
+        if (mentionedProfiles) {
+          for (const mp of mentionedProfiles) {
+            if (mp.user_id !== user.id) {
+              await supabase.rpc('insert_unique_notification', {
+                p_user_id: mp.user_id,
+                p_actor_id: user.id,
+                p_type: 'mention',
+                p_post_id: newPost.id,
+              });
+            }
+          }
+        }
+      }
+
       setContent('');
       setImageFile(null);
       setImagePreview(null);
