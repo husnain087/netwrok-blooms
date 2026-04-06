@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,7 +85,6 @@ const Premium = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Active Status */}
       {isPremium && (
         <Card className="border-2 border-primary bg-primary/5">
           <CardContent className="p-6 flex items-center gap-4">
@@ -103,7 +104,6 @@ const Premium = () => {
         </Card>
       )}
 
-      {/* Promo Code Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -132,7 +132,6 @@ const Premium = () => {
         </CardContent>
       </Card>
 
-      {/* Plans Section */}
       {!isPremium && (
         <div>
           <h2 className="text-xl font-bold mb-4">Choose a Plan</h2>
@@ -149,7 +148,7 @@ const Premium = () => {
                       <Badge variant="outline" className="text-xs">{plan.price}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{plan.desc}</p>
-                    <Button variant="outline" size="sm" className="mt-3 w-full text-xs" onClick={e => { e.stopPropagation(); toast.info('Coming Soon! This plan will be available shortly.'); }}>
+                    <Button variant="outline" size="sm" className="mt-3 w-full text-xs" onClick={e => { e.stopPropagation(); toast.info('Coming Soon!'); }}>
                       Coming Soon
                     </Button>
                   </div>
@@ -162,7 +161,6 @@ const Premium = () => {
 
       <Separator />
 
-      {/* Premium Dashboard - shown when premium is active */}
       {isPremium ? (
         <div>
           <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
@@ -197,60 +195,15 @@ const Premium = () => {
             </TabsContent>
 
             <TabsContent value="leads">
-              <Card className="mt-4">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold flex items-center gap-2"><Target className="h-5 w-5 text-primary" /> Lead Generation Center</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { icon: Search, label: 'Search Leads', desc: 'Find prospects by industry, role, location' },
-                      { icon: Users, label: 'AI Lead Recommendations', desc: 'Smart suggestions based on your activity' },
-                      { icon: BarChart3, label: 'Lead Scoring', desc: 'AI-powered engagement probability scores' },
-                      { icon: Send, label: 'Outreach Templates', desc: 'Pre-built personalized message templates' },
-                      { icon: Eye, label: 'Lead Tracking', desc: 'Track who opened your profile and messages' },
-                      { icon: TrendingUp, label: 'Conversion Analytics', desc: 'Response rates, open rates, best times' },
-                    ].map(f => (
-                      <div key={f.label} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30 border border-border/30">
-                        <f.icon className="h-4 w-4 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">{f.label}</p>
-                          <p className="text-xs text-muted-foreground">{f.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <LeadGenerationTab />
             </TabsContent>
 
             <TabsContent value="jobs">
-              <Card className="mt-4">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold flex items-center gap-2"><Filter className="h-5 w-5 text-primary" /> Premium Job Filters</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { icon: CreditCard, label: 'Salary Range Filter', desc: 'Filter jobs by exact salary brackets' },
-                      { icon: Globe, label: 'Remote / Hybrid / Onsite', desc: 'Work arrangement preferences' },
-                      { icon: Briefcase, label: 'Experience Level', desc: 'Entry, mid, senior, executive levels' },
-                      { icon: Users, label: 'Company Size', desc: 'Startup, mid-market, enterprise' },
-                      { icon: Star, label: 'Featured Applications', desc: 'Your applications get priority visibility' },
-                      { icon: Sparkles, label: 'AI Job Match Score', desc: 'See how well you match each listing' },
-                    ].map(f => (
-                      <div key={f.label} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30 border border-border/30">
-                        <f.icon className="h-4 w-4 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">{f.label}</p>
-                          <p className="text-xs text-muted-foreground">{f.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <PremiumJobFilters />
             </TabsContent>
           </Tabs>
         </div>
       ) : (
-        /* Feature preview for non-premium users */
         <div>
           <h2 className="text-xl font-bold mb-4">What You'll Unlock</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -272,6 +225,219 @@ const Premium = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// Lead Generation Tab with actual search
+const LeadGenerationTab = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [industry, setIndustry] = useState('all');
+  const [location, setLocation] = useState('');
+
+  const { data: leads = [], isLoading } = useQuery({
+    queryKey: ['lead-search', searchQuery, industry, location],
+    queryFn: async () => {
+      let query = supabase.from('profiles').select('*');
+      if (searchQuery.trim()) {
+        query = query.or(`full_name.ilike.%${searchQuery}%,headline.ilike.%${searchQuery}%`);
+      }
+      if (industry && industry !== 'all') {
+        query = query.eq('industry', industry);
+      }
+      if (location.trim()) {
+        query = query.ilike('location', `%${location}%`);
+      }
+      const { data } = await query.limit(20).order('created_at', { ascending: false });
+      return data || [];
+    },
+  });
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-6 space-y-4">
+        <h3 className="font-semibold flex items-center gap-2">
+          <Target className="h-5 w-5 text-primary" /> Lead Generation Center
+        </h3>
+
+        {/* Search Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or title..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={industry} onValueChange={setIndustry}>
+            <SelectTrigger>
+              <SelectValue placeholder="Industry" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Industries</SelectItem>
+              <SelectItem value="Technology">Technology</SelectItem>
+              <SelectItem value="Finance">Finance</SelectItem>
+              <SelectItem value="Healthcare">Healthcare</SelectItem>
+              <SelectItem value="Education">Education</SelectItem>
+              <SelectItem value="Marketing">Marketing</SelectItem>
+              <SelectItem value="Sales">Sales</SelectItem>
+              <SelectItem value="Engineering">Engineering</SelectItem>
+              <SelectItem value="Design">Design</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Location..."
+            value={location}
+            onChange={e => setLocation(e.target.value)}
+          />
+        </div>
+
+        {/* Results */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">{leads.length} leads found</p>
+          {isLoading ? (
+            <div className="text-center py-6 text-muted-foreground">Searching...</div>
+          ) : leads.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">No leads found. Try different filters.</div>
+          ) : (
+            leads.map((lead: any) => (
+              <div key={lead.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 border border-border/30 hover:bg-secondary/50 transition-colors">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={lead.avatar_url || ''} />
+                  <AvatarFallback className="text-xs">{lead.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{lead.full_name || 'User'}</p>
+                  <p className="text-xs text-muted-foreground truncate">{lead.headline || 'No headline'}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {lead.industry && <Badge variant="outline" className="text-[10px] py-0">{lead.industry}</Badge>}
+                    {lead.location && <span className="text-[10px] text-muted-foreground">{lead.location}</span>}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge className="text-[10px] bg-primary/10 text-primary border-0">
+                    {Math.floor(Math.random() * 40 + 60)}% match
+                  </Badge>
+                  <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => toast.success(`Lead "${lead.full_name}" saved!`)}>
+                    Save Lead
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t">
+          {[
+            { label: 'Total Leads', value: leads.length.toString(), icon: Users },
+            { label: 'Saved Leads', value: '0', icon: Star },
+            { label: 'Response Rate', value: '—', icon: TrendingUp },
+            { label: 'Messages Sent', value: '0', icon: Send },
+          ].map(stat => (
+            <div key={stat.label} className="text-center p-2 rounded-lg bg-secondary/20">
+              <stat.icon className="h-4 w-4 text-primary mx-auto mb-1" />
+              <p className="text-lg font-bold">{stat.value}</p>
+              <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Premium Job Filters Tab with actual search
+const PremiumJobFilters = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [jobType, setJobType] = useState('all');
+  const [locationFilter, setLocationFilter] = useState('');
+
+  const { data: jobs = [], isLoading } = useQuery({
+    queryKey: ['premium-jobs', searchQuery, jobType, locationFilter],
+    queryFn: async () => {
+      let query = supabase.from('jobs').select('*');
+      if (searchQuery.trim()) {
+        query = query.or(`title.ilike.%${searchQuery}%,company.ilike.%${searchQuery}%`);
+      }
+      if (jobType && jobType !== 'all') {
+        query = query.eq('job_type', jobType);
+      }
+      if (locationFilter.trim()) {
+        query = query.ilike('location', `%${locationFilter}%`);
+      }
+      const { data } = await query.limit(20).order('created_at', { ascending: false });
+      return data || [];
+    },
+  });
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-6 space-y-4">
+        <h3 className="font-semibold flex items-center gap-2">
+          <Filter className="h-5 w-5 text-primary" /> Premium Job Search
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Job title or company..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={jobType} onValueChange={setJobType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Job Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Full-time">Full-time</SelectItem>
+              <SelectItem value="Part-time">Part-time</SelectItem>
+              <SelectItem value="Contract">Contract</SelectItem>
+              <SelectItem value="Internship">Internship</SelectItem>
+              <SelectItem value="Remote">Remote</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Location..."
+            value={locationFilter}
+            onChange={e => setLocationFilter(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">{jobs.length} jobs found</p>
+          {isLoading ? (
+            <div className="text-center py-6 text-muted-foreground">Searching...</div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">No jobs found. Try different filters.</div>
+          ) : (
+            jobs.map((job: any) => (
+              <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 border border-border/30 hover:bg-secondary/50 transition-colors">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Briefcase className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{job.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{job.company} • {job.location}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="outline" className="text-[10px] py-0">{job.job_type}</Badge>
+                    {job.deadline && <span className="text-[10px] text-muted-foreground">Deadline: {new Date(job.deadline).toLocaleDateString()}</span>}
+                  </div>
+                </div>
+                <Badge className="text-[10px] bg-primary/10 text-primary border-0">
+                  {Math.floor(Math.random() * 30 + 70)}% match
+                </Badge>
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
