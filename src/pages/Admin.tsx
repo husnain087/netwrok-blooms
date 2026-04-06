@@ -11,13 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp, BadgeCheck, Mail, CheckCircle, XCircle, UserCog, Send } from 'lucide-react';
+import { Shield, Users, FileText, Briefcase, Trash2, Ban, Search, MessageCircle, UserX, PauseCircle, PlayCircle, AlertTriangle, Activity, TrendingUp, BadgeCheck, Mail, CheckCircle, XCircle, UserCog, Send, Video, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Navigate } from 'react-router-dom';
 
 type UserAction = { type: 'ban' | 'suspend' | 'delete'; userId: string; userName: string } | null;
 type MessageTarget = { userId: string; userName: string } | null;
+type MeetingForm = { title: string; description: string; scheduled_at: string; meeting_url: string };
 
 const Admin = () => {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ const Admin = () => {
   const [adminMessage, setAdminMessage] = useState('');
   const [messageTarget, setMessageTarget] = useState<MessageTarget>(null);
   const [directMessage, setDirectMessage] = useState('');
+  const [meetingForm, setMeetingForm] = useState<MeetingForm>({ title: '', description: '', scheduled_at: '', meeting_url: '' });
+  const [showMeetingForm, setShowMeetingForm] = useState(false);
 
   const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
     queryKey: ['is-admin', user?.id],
