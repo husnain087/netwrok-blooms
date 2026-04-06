@@ -229,8 +229,69 @@ const Admin = () => {
     }
   };
 
+  const createMeeting = async () => {
+    if (!meetingForm.title.trim() || !user) return;
+    try {
+      await (supabase.from('community_meetings') as any).insert({
+        title: meetingForm.title,
+        description: meetingForm.description || null,
+        scheduled_at: meetingForm.scheduled_at || null,
+        meeting_url: meetingForm.meeting_url || null,
+        created_by: user.id,
+      });
+      const { data: allProfiles } = await supabase.from('profiles').select('user_id');
+      if (allProfiles) {
+        for (const p of allProfiles) {
+          if (p.user_id !== user.id) {
+            await supabase.from('notifications').insert({
+              user_id: p.user_id, actor_id: user.id, type: 'community_meeting',
+            });
+          }
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+      queryClient.invalidateQueries({ queryKey: ['community-meetings'] });
+      setMeetingForm({ title: '', description: '', scheduled_at: '', meeting_url: '' });
+      setShowMeetingForm(false);
+      toast.success('Meeting created & all users notified!');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
-  if (!isAdmin) return <Navigate to="/" replace />;
+  const toggleMeetingLive = async (meetingId: string, isLive: boolean) => {
+    try {
+      await (supabase.from('community_meetings') as any).update({ is_live: !isLive }).eq('id', meetingId);
+      if (!isLive) {
+        const { data: allProfiles } = await supabase.from('profiles').select('user_id');
+        if (allProfiles) {
+          for (const p of allProfiles) {
+            if (p.user_id !== user!.id) {
+              await supabase.from('notifications').insert({
+                user_id: p.user_id, actor_id: user!.id, type: 'community_meeting_live',
+              });
+            }
+          }
+        }
+        toast.success('Meeting is LIVE! All users notified.');
+      } else {
+        toast.success('Meeting ended.');
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+      queryClient.invalidateQueries({ queryKey: ['community-meetings'] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const deleteMeeting = async (meetingId: string) => {
+    await (supabase.from('community_meetings') as any).delete().eq('id', meetingId);
+    queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+    queryClient.invalidateQueries({ queryKey: ['community-meetings'] });
+    toast.success('Meeting deleted');
+  };
+
+
 
   const filteredProfiles = profiles.filter((p: any) =>
     !searchQuery || p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.headline?.toLowerCase().includes(searchQuery.toLowerCase()) || p.email?.toLowerCase().includes(searchQuery.toLowerCase())
