@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, X, Trash2 } from 'lucide-react';
+import { Plus, X, Trash2, Video as VideoIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
@@ -171,11 +171,51 @@ const StoriesBar = () => {
     }
   };
 
+  // Fetch active/upcoming community meetings
+  const { data: meetings = [] } = useQuery({
+    queryKey: ['community-meetings'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('community_meetings')
+        .select('*')
+        .or(`is_live.eq.true,scheduled_at.gte.${new Date().toISOString()}`)
+        .order('is_live', { ascending: false })
+        .order('scheduled_at', { ascending: true })
+        .limit(5) as any;
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  const activeMeeting = meetings.find((m: any) => m.is_live);
+  const upcomingMeeting = meetings.find((m: any) => !m.is_live);
+
   return (
     <>
       <div className="bg-card border rounded-2xl p-3 shadow-sm">
         <ScrollArea className="w-full">
           <div className="flex gap-3 items-center pb-1">
+            {/* Community Meeting Button */}
+            {(activeMeeting || upcomingMeeting) && (
+              <div
+                className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0"
+                onClick={() => {
+                  if (activeMeeting?.meeting_url) {
+                    window.open(activeMeeting.meeting_url, '_blank');
+                  } else {
+                    toast.info(`Meeting scheduled: ${upcomingMeeting?.title || 'Community Meeting'} at ${new Date(upcomingMeeting?.scheduled_at).toLocaleString()}`);
+                  }
+                }}
+              >
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center border-2 ${activeMeeting ? 'bg-green-500/20 border-green-500 animate-pulse' : 'bg-primary/10 border-primary/50'}`}>
+                  <VideoIcon className={`h-6 w-6 ${activeMeeting ? 'text-green-500' : 'text-primary'}`} />
+                </div>
+                <span className={`text-[10px] font-bold truncate w-14 text-center ${activeMeeting ? 'text-green-500' : 'text-primary'}`}>
+                  {activeMeeting ? 'LIVE' : 'Meeting'}
+                </span>
+              </div>
+            )}
+
             <div className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => fileRef.current?.click()}>
               <div className="relative">
                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-primary/50 hover:border-primary transition-colors">
