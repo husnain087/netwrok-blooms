@@ -1,0 +1,21 @@
+# Network-Bloom
+
+> Professional networking platform to connect with peers, share insights, find jobs, and grow your career and business.
+
+## Pages
+
+- [Home](/): Feed of posts, stories, and updates from your network.
+- [About](/about): What Network-Bloom is and the values behind it.
+- [Jobs](/jobs): Browse and search professional job opportunities.
+- [Network](/network): Discover and grow your professional connections.
+- [Premium](/premium): Premium features including lead generation and advanced job filters.
+- [Help Center](/help-center): Guides and support for using Network-Bloom.
+- [Advertising](/advertising): How to advertise your business on Network-Bloom.
+- [Business Services](/business-services): Tools and services for businesses.
+
+## Optional
+
+- [Privacy & Terms](/privacy): Privacy policy.
+- [Terms](/terms): Terms of service.
+- [Accessibility](/accessibility): Accessibility commitments.
+- [Ad Choices](/ad-choices): Ad personalization choices.
