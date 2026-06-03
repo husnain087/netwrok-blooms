@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://netwrok-blooms.lovable.app/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/auth</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/about</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/jobs</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/network</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/premium</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/help-center</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/advertising</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/business-services</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/accessibility</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/ad-choices</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://netwrok-blooms.lovable.app/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+</urlset>
